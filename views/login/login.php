@@ -1,8 +1,18 @@
+<?php
+
+if (!isset($basePath)) {
+  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+  $viewsPosition = strpos($scriptName, '/views/');
+  $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
+  $basePath = $projectBase . '/public';
+}
+
+?>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../../public/style.css" />
+    <link rel="stylesheet" href="<?= $basePath ?>/css/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,7 +22,11 @@
     <title>StreamHive</title>
   </head>
   <body>
-    <div>
-    </div>
+    <main class="container">
+      <h1>Login</h1>
+      <a href="<?= $basePath ?>/index.php?route=register">Create account</a>
+      <br />
+      <a href="<?= $basePath ?>/index.php?route=home">Back to home</a>
+    </main>
   </body>
 </html>
