@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../../core/Database.php';
 
-class comment
+class commentLikes
 {
     private $db;
 
@@ -12,19 +12,19 @@ class comment
         $this->db = $database->getConnection();
     }
 
-    public function getAllComments()
+    public function getAllCommentLikes()
     {
-        // Fetch all comments along with the username of the commenter using a LEFT JOIN query
-        // $query = "SELECT c.*, u.username FROM comments c LEFT JOIN users u ON u.id = c.user_id";
+        // Fetch all likes on comments
+        // $query = "";
 
         $result = mysqli_query($this->db, $query);
 
-        $comments = [];
+        $commentLikes = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
-            $comments[] = $row;
+            $commentLikes[] = $row;
         }
 
-        return $comments;
+        return $commentLikes;
     }
 }

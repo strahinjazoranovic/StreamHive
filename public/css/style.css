@@ -7,6 +7,22 @@ main {
   padding: 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: #f5f5f5;
+  text-decoration: none;
+}
+
 .navbar {
   display: flex;
   align-items: center;
@@ -16,7 +32,7 @@ main {
   border-bottom: 2px solid #666666;
 }
 
-.navbar-left {
+.navbarLeft {
   flex: 1;
   display: flex;
   justify-content: flex-start;
@@ -24,14 +40,14 @@ main {
   align-items: center;
 }
 
-.navbar-center {
+.navbarCenter {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.navbar-right {
+.navbarRight {
   flex: 1;
   display: flex;
   justify-content: flex-end;
@@ -39,7 +55,7 @@ main {
   align-items: center;
 }
 
-.search-bar {
+.searchBar {
   display: flex;
   justify-content: start;
   align-items: center;
@@ -53,7 +69,7 @@ main {
   height: 30px;
 }
 
-.search-input {
+.searchInput {
   background: none;
   border: none;
   outline: none;
@@ -75,7 +91,7 @@ main {
   transition: all 0.3s ease;
 }
 
-.button-secondary {
+.buttonSecondary {
   background-color: #666666;
   color: #fff;
   border: none;
@@ -87,27 +103,16 @@ main {
 }
 
 .button:hover,
-.button-secondary:hover {
+.buttonSecondary:hover {
   transform: translateY(-3px);
 }
 
 .button:active,
-.button-secondary:active {
+.buttonSecondary:active {
   transform: translateY(0);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p {
-  margin: 0;
-  padding: 0;
-}
-
-.icon-button {
+.iconButton {
   background: none;
   border: none;
   padding: 0;
@@ -115,20 +120,56 @@ p {
   transition: all 0.2s ease;
 }
 
-.icon-button img {
+.iconButton img {
   display: block;
 }
 
-.icon-button:active {
+.iconButton:active {
   transform: translateY(1px);
 }
 
-.text-header {
+.profileMenuWrapper {
+  position: relative;
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 150px;
+  display: none;
+  background-color: #222222;
+  border: 1px solid #666666;
+  border-radius: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.profileMenu.open {
+  display: block;
+}
+
+.profileMenu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.profileMenu-item:hover {
+  background-color: #333333;
+}
+
+.textHeader {
   font-size: 2rem;
   font-weight: bold;
 }
 
-.text-accent {
+.textAccent {
   color: #ff0000;
 }
 
@@ -159,13 +200,13 @@ p {
   pointer-events: auto;
 }
 
-.sidebar-menu {
+.sidebarMenu {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.sidebar-item {
+.sidebarItem {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -175,27 +216,27 @@ p {
   transition: background 0.3s ease;
 }
 
-.sidebar-item:hover {
+.sidebarItem:hover {
   background-color: #666666;
 }
 
-.sidebar-item:active {
+.sidebarItem:active {
   transform: translateY(1px);
 }
 
-.sidebar-icon {
+.sidebarIcon {
   width: 32px;
   height: 32px;
 }
 
-.sidebar-text {
+.sidebarText {
   color: #fff;
   font-size: 14px;
   font-weight: 500;
   font-family: "Poppins", sans-serif;
 }
 
-.sidebar-link {
+.sidebarLink {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -203,13 +244,13 @@ p {
   width: 100%;
 }
 
-.sidebar-divider {
+.sidebarDivider {
   height: 2px;
   background-color: #2a2a2a;
   margin: 10px 0;
 }
 
-.sidebar-item.active {
+.sidebarItem.active {
   background-color: #2a2a2a;
 }
 
@@ -221,48 +262,86 @@ p {
   background: #333;
   border-radius: 10px;
 }
+
 .container {
   padding: 24px;
+  margin-left: 0;
+  transition: margin-left 0.4s ease;
+}
+
+.sidebar.open ~ .container {
+  margin-left: 250px;
+}
+
+.containerGuest {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.containerVideos {
+  display: block;
 }
 
 .content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 2fr));
   gap: 16px;
-  margin-left: 250px;
 }
 
-.video-card {
+.videoCard {
   background-color: #222222;
   border: 2px solid #333333;
   border-radius: 10px;
   padding: 12px;
 }
 
-.video-title {
+.videoTitle {
   font-size: 1.1rem;
   margin-bottom: 8px;
 }
 
-.video-user {
+.videoUser {
   color: #d1d1d1;
   margin-bottom: 8px;
 }
 
-.video-div {
+.videoDiv {
   display: flex;
   justify-content: start;
   gap: 16px;
   font-size: 0.9rem;
 }
 
-.video-thumbnail {
+.videoThumbnail {
   width: 100%;
   height: auto;
   border-radius: 8px;
   margin-bottom: 12px;
 }
 
-.empty-state {
+.emptyState {
   color: #999999;
+}
+
+.loginPrompt {
+  background-color: #222222;
+  border: 2px solid #333333;
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  width: 100%;
+  max-width: 520px;
+}
+
+.loginPrompt button {
+  width: 30%;
+}
+
+.loginPromptSidebar button {
+  width: 100%;
+}
+
+.loginMessage {
+  margin-bottom: 12px;
 }

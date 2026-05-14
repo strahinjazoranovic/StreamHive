@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../../core/Database.php';
 
-class User
+class user
 {
     private $db;
 

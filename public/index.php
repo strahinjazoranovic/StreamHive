@@ -1,16 +1,22 @@
 <?php
 require_once __DIR__ . '/../core/Router.php';
-require_once __DIR__ . '/../app/controllers/homeController.php';
+require_once __DIR__ . '/../app/controllers/viewController.php';
 require_once __DIR__ . '/../app/controllers/authController.php';
 
 $router = new Router();
 
 // Define every route and its corresponding controller action
-$router->get('/', [HomeController::class, 'index']);
-$router->get('/home', [HomeController::class, 'index']);
-$router->get('/admin', [HomeController::class, 'admin']);
+$router->get('/', [viewController::class, 'index']);
+$router->get('/home', [viewController::class, 'index']);
+$router->get('/admin', [viewController::class, 'admin']);
+$router->get('/subscriptions', [viewController::class, 'subscriptions']);
+$router->get('/library', [viewController::class, 'library']);
+$router->get('/history', [viewController::class, 'history']);
 $router->get('/login', [AuthController::class, 'login']);
 $router->get('/register', [AuthController::class, 'register']);
+$router->get('/logout', [AuthController::class, 'logout']);
+$router->post('/login', [AuthController::class, 'login']);
+$router->post('/register', [AuthController::class, 'register']);
 
 $requestedPath = '/';
 $route = $_GET['route'] ?? '';

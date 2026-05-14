@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../../core/Database.php';
 
-class comment
+class category
 {
     private $db;
 
@@ -12,19 +12,19 @@ class comment
         $this->db = $database->getConnection();
     }
 
-    public function getAllComments()
+    public function getAllCategories()
     {
-        // Fetch all comments along with the username of the commenter using a LEFT JOIN query
-        // $query = "SELECT c.*, u.username FROM comments c LEFT JOIN users u ON u.id = c.user_id";
+        // Fetch all categories
+        // $query = "SELECT * FROM categories";
 
         $result = mysqli_query($this->db, $query);
 
-        $comments = [];
+        $categories = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
-            $comments[] = $row;
+            $categories[] = $row;
         }
 
-        return $comments;
+        return $categories;
     }
 }

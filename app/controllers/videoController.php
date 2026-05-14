@@ -3,7 +3,7 @@
 require_once __DIR__ . '/controller.php';
 require_once __DIR__ . '/../models/video.php';
 
-class VideoController extends Controller
+class videoController extends Controller
 {
     public function index()
     {
