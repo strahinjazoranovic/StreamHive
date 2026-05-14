@@ -335,7 +335,8 @@ a {
 }
 
 .loginPrompt button {
-  width: 30%;
+  width: 35%;
+  margin-right: 12px;
 }
 
 .loginPromptSidebar button {

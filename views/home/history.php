@@ -157,7 +157,7 @@ $formatTimeAgo = static function ($createdAtValue) {
           <!-- If the user is not logged in show this message -->
           <?php if (!$isLoggedIn): ?>
             <div class="loginPromptSidebar">
-              <p class="loginMessage">Please log in to access more pages.</p>
+              <p class="loginMessage">Please log in or create to access more pages.</p>
               <a href="<?= $basePath ?>/index.php?route=login">
                 <button 
                   href="<?= $basePath ?>/index.php?route=login" 
@@ -234,10 +234,15 @@ $formatTimeAgo = static function ($createdAtValue) {
         <!-- If the user is not logged in show this message -->
         <?php if (!$isLoggedIn): ?>
           <div class="loginPrompt">
-            <p class="loginMessage">Please log in to access more features.</p>
+            <p class="loginMessage">Please log in or create an account to access videos.</p>
             <a href="<?= $basePath ?>/index.php?route=login">
               <button class="button">
                 Log In
+              </button>
+            </a>
+            <a href="<?= $basePath ?>/index.php?route=register">
+              <button class="button">
+                Create an account
               </button>
             </a>
           </div>

@@ -51,12 +51,12 @@ $role = $role ?? "user";
             <input type="email" name="email" value="<?= htmlspecialchars($email, ENT_QUOTES, "UTF-8") ?>" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" required>
         </label>
         <label>Wachtwoord
-            <input type="password" name="password" minlength="6" maxlength="80" required>
+            <input type="password" name="password" minlength="8" maxlength="80" required>
         </label>
         <label>Bevestig wachtwoord
-            <input type="password" name="confirm_password" minlength="6" maxlength="80" required>
+            <input type="password" name="confirm_password" minlength="8" maxlength="80" required>
         </label>
-        <button type="submit" class="button">Account maken</button>
+        <button type="submit" class="button">Account aanmaken</button>
             <p class="hint">Heb je al een account? <a href="<?= $basePath ?>/index.php?route=login">Inloggen</a>.</p>
             <?php if ($error !== "") { ?>
                 <p class="hint"><?php echo htmlspecialchars($error, ENT_QUOTES, "UTF-8"); ?></p>

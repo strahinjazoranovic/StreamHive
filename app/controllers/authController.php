@@ -117,10 +117,14 @@ class AuthController extends Controller
                     if ($createdUserId === null) {
                         $error = 'Er ging iets mis bij het aanmaken van het account.';
                     } else {
-                        $success = 'Account aangemaakt. Je kunt nu inloggen.';
-                        $email = '';
-                        $username = '';
-                        $role = 'user';
+                        $_SESSION['user_id'] = $createdUserId;
+                        $_SESSION['email'] = $email;
+                        $_SESSION['username'] = $username;
+                        $_SESSION['role'] = $role;
+
+                        $targetRoute = $role === 'admin' ? 'admin' : 'home';
+                        header('Location: ' . $this->getBasePath() . '/index.php?route=' . $targetRoute);
+                        exit;
                     }
                 }
             }
