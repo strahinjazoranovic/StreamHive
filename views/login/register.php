@@ -35,9 +35,9 @@ $role = $role ?? "user";
 <body>
     <form method="post" action="<?= $basePath ?>/index.php?route=register" class="loginContainer">
       <div class="loginForm">
-          <h1 class="textHeader">
-            Stream<span class="textAccent">Hive</span>
-          </h1>
+          <a href="<?= $basePath ?>/index.php?route=home" class="navbarLogoLink">
+          <h1 class="textHeader">Stream<span class="textAccent">Hive</span></h1>
+        </a>
         <label>Gebruikersnaam
             <input type="text" name="username" value="<?= htmlspecialchars($username, ENT_QUOTES, "UTF-8") ?>" minlength="4" maxlength="40" required>
         </label>

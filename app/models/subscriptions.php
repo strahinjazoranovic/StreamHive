@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../../core/Database.php';
 
-class category
+class subscriptions
 {
     private $db;
 
@@ -12,19 +12,19 @@ class category
         $this->db = $database->getConnection();
     }
 
-    public function getAllCategories()
+    public function getAllSubscriptions()
     {
-        // Fetch all categories
-        $query = "SELECT id, name FROM category ORDER BY name ASC";
+        // Fetch all subcriptions for the user
+        // $query = "";
 
         $result = mysqli_query($this->db, $query);
 
-        $categories = [];
+        $subscriptions = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
-            $categories[] = $row;
+            $subscriptions[] = $row;
         }
 
-        return $categories;
+        return $subscriptions;
     }
 }

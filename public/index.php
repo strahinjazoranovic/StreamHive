@@ -8,6 +8,7 @@ $router = new Router();
 // Define every route and its corresponding controller action
 $router->get('/', [viewController::class, 'index']);
 $router->get('/home', [viewController::class, 'index']);
+$router->get('/video', [viewController::class, 'video']);
 $router->get('/admin', [viewController::class, 'admin']);
 $router->get('/subscriptions', [viewController::class, 'subscriptions']);
 $router->get('/library', [viewController::class, 'library']);
@@ -17,6 +18,7 @@ $router->get('/register', [AuthController::class, 'register']);
 $router->get('/logout', [AuthController::class, 'logout']);
 $router->post('/login', [AuthController::class, 'login']);
 $router->post('/register', [AuthController::class, 'register']);
+$router->post('/manage-video', [viewController::class, 'manageVideo']);
 
 $requestedPath = '/';
 $route = $_GET['route'] ?? '';

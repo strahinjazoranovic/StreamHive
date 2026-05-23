@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../app/helpers/videoDuration.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -55,6 +56,7 @@ $formatTimeAgo = static function ($createdAtValue) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="<?= $basePath ?>/css/style.css" />
+    <link rel="stylesheet" href="<?= $basePath ?>/css/video.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -81,9 +83,9 @@ $formatTimeAgo = static function ($createdAtValue) {
             />
           </button>
 
-          <h1 class="textHeader">
-            Stream<span class="textAccent">Hive</span>
-          </h1>
+          <a href="<?= $basePath ?>/index.php?route=home" class="navbarLogoLink">
+          <h1 class="textHeader">Stream<span class="textAccent">Hive</span></h1>
+        </a>
         </div>
 
         <div class="navbar-center">
@@ -254,21 +256,43 @@ $formatTimeAgo = static function ($createdAtValue) {
             <?php else: ?>
               <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
               <?php foreach ($videos as $video): ?>
+                <?php
+                  $videoId = (int)($video['id'] ?? 0);
+                  $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
+                  $thumbnailUrl = $thumbnailFileName !== ''
+                    ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
+                    : $basePath . '/logos/streamHiveLogo.png';
+                  $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
+                ?>
+                <?php if ($videoId > 0): ?>
+
+              <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                <?php endif; ?>
                 <article class="videoCard">
-                  <!-- <a href="<?= $basePath ?>/index.php?route=video&id=<?= (int)($video['id'] ?? 0) ?>">
+                  <div class="videoThumbnailLink">
                     <img
-                      src="<?= htmlspecialchars($video['thumbnail_path'] ?? $basePath . '/images/default_thumbnail.jpg', ENT_QUOTES, 'UTF-8') ?>"
-                      alt="Video thumbnail"
-                      class="videoThumbnail"
-                    />
-                  </a> -->
-                  <h2 class="videoTitle"><?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?></h2>
-                  <p class="videoUser"><?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
+                      class="videoThumbnailImage"
+                      src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
+                      alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                    <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="videoPlayOverlay" aria-hidden="true">▶</span>
+                  </div>
+                  <h2 class="videoTitle">
+                    <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
+                  </h2>
+                  <p class="videoUser">
+                    <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                  </p>
                   <div class="videoDiv">
                     <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
                     <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                   </div>
                 </article>
+              <?php if ($videoId > 0): ?>
+                </a>
+              <?php endif; ?>
+
               <?php endforeach; ?>
             <?php endif; ?>
           </div>

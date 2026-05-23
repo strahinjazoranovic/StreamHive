@@ -16,11 +16,12 @@ h6,
 p {
   margin: 0;
   padding: 0;
+  text-decoration: none;
 }
 
 a {
-  color: #f5f5f5;
   text-decoration: none;
+  color: inherit;
 }
 
 .navbar {
@@ -184,11 +185,9 @@ a {
   background: #222222;
   border-right: 1px solid #666666;
   z-index: 10;
-
   opacity: 0;
   transform: translateX(-250px);
   pointer-events: none;
-
   transition:
     opacity 0.4s ease,
     transform 0.4s ease;
@@ -279,50 +278,6 @@ a {
   align-items: center;
 }
 
-.containerVideos {
-  display: block;
-}
-
-.content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 2fr));
-  gap: 16px;
-}
-
-.videoCard {
-  background-color: #222222;
-  border: 2px solid #333333;
-  border-radius: 10px;
-  padding: 12px;
-}
-
-.videoTitle {
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-}
-
-.videoUser {
-  color: #d1d1d1;
-  margin-bottom: 8px;
-}
-
-.videoDiv {
-  display: flex;
-  justify-content: start;
-  gap: 16px;
-  font-size: 0.9rem;
-}
-
-.videoThumbnail {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-
-.emptyState {
-  color: #999999;
-}
 
 .loginPrompt {
   background-color: #222222;
@@ -346,3 +301,4 @@ a {
 .loginMessage {
   margin-bottom: 12px;
 }
+
