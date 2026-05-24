@@ -97,7 +97,7 @@ class viewController extends Controller
             'invalid_thumbnail_type' => 'Only image formats are allowed for thumbnails.',
             'thumbnail_too_large' => 'Thumbnail is too large. Keep it under 5MB.',
             'thumbnail_upload_failed' => 'Thumbnail upload failed due to a server error.',
-            'duration_extraction_failed' => 'Unable to read video duration. Ensure ffprobe is installed and try another file.',
+            'duration_extraction_failed' => 'Unable to read video duration.',
             'missing_title' => 'Please enter a title for the video.',
             'invalid_category' => 'Selected category is invalid.',
             'invalid_visibility' => 'Selected visibility is invalid.',

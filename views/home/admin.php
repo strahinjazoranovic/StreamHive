@@ -51,7 +51,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
 
       <div class="navbar-center">
         <div class="searchBar">
-          <input type="text" class="searchInput" placeholder="Zoek" />
+          <input type="text" class="searchInput" placeholder="Search" />
           <button class="iconButton">
             <img
               src="<?= $basePath ?>/logos/search.svg"
@@ -274,7 +274,6 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
                       <a
                         class="adminVideoShareLink"
                         href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>"
-                        target="_blank"
                       >
                         View video
                       </a>
@@ -371,42 +370,51 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
           <input type="hidden" name="action" value="update">
           <input type="hidden" name="videoId" id="editVideoId">
 
-          <div class="modalForm">
-            <label for="editVideoTitle">Title</label>
-            <input type="text" name="videoTitle" id="editVideoTitle" placeholder="Enter video title" required>
+          <div class="editModalLayout">
+            <div class="modalForm">
+              <label for="editVideoTitle">Title</label>
+              <input type="text" name="videoTitle" id="editVideoTitle" placeholder="Enter video title" required>
 
-            <label for="editVideoDescription">Description</label>
-            <input type="text" name="videoDescription" id="editVideoDescription" placeholder="Enter video description">
+              <label for="editVideoDescription">Description</label>
+              <input type="text" name="videoDescription" id="editVideoDescription" placeholder="Enter video description">
 
-            <label for="editVideoCategory">Category</label>
-            <select name="videoCategory" id="editVideoCategory">
-              <option value="">Select category</option>
-              <?php foreach ($categories as $category): ?>
-                <option value="<?= (int)($category['id'] ?? 0) ?>">
-                  <?= htmlspecialchars($category['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+              <label for="editVideoCategory">Category</label>
+              <select name="videoCategory" id="editVideoCategory">
+                <option value="">Select category</option>
+                <?php foreach ($categories as $category): ?>
+                  <option value="<?= (int)($category['id'] ?? 0) ?>">
+                    <?= htmlspecialchars($category['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
 
-            <label for="editVideoVisibility">Visibility</label>
-            <select name="videoVisibility" id="editVideoVisibility">
-              <?php foreach ($visibilityOptions as $visibilityOption): ?>
-                <option value="<?= htmlspecialchars($visibilityOption, ENT_QUOTES, 'UTF-8') ?>">
-                  <?= htmlspecialchars(ucfirst($visibilityOption), ENT_QUOTES, 'UTF-8') ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+              <label for="editVideoVisibility">Visibility</label>
+              <select name="videoVisibility" id="editVideoVisibility">
+                <?php foreach ($visibilityOptions as $visibilityOption): ?>
+                  <option value="<?= htmlspecialchars($visibilityOption, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars(ucfirst($visibilityOption), ENT_QUOTES, 'UTF-8') ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
 
-            <label for="editThumbnailToUpload">Replace thumbnail</label>
-            <input type="file" name="thumbnailToUpload" id="editThumbnailToUpload" accept="image/*">
-            <p class="thumbnailFieldHint">Leave empty to keep the current thumbnail.</p>
-            <img id="editThumbnailPreview" class="editThumbnailPreview" src="<?= $basePath ?>/logos/streamHiveLogo.png" alt="Current thumbnail preview">
+              <label for="editThumbnailToUpload">Replace thumbnail</label>
+              <input type="file" name="thumbnailToUpload" id="editThumbnailToUpload" accept="image/*">
+              <p class="thumbnailFieldHint">Leave empty to keep the current thumbnail.</p>
+            </div>
+
+            <aside class="editThumbnailPanel">
+              <h2>Thumbnail preview</h2>
+              <div class="editThumbnailPreviewFrame">
+                <img id="editThumbnailPreview" class="editThumbnailPreview" src="<?= $basePath ?>/logos/streamHiveLogo.png" alt="Current thumbnail preview">
+              </div>
+              <div class="modalActions">
+                <button type="button" class="buttonSecondary openDeleteModal">Delete video</button>
+                <button type="submit" class="button">Save changes</button>
+              </div>
+            </aside>
           </div>
 
-          <div class="modalActions">
-            <button type="submit" class="button">Save changes</button>
-            <button type="button" class="buttonSecondary openDeleteModal">Delete video</button>
-          </div>
+          
         </form>
       </div>
 
@@ -425,8 +433,8 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
           <input type="hidden" name="videoId" id="deleteVideoId">
 
           <div class="modalActions">
-            <button type="button" class="buttonSecondary" data-close-modal>Cancel</button>
-            <button type="submit" class="button deleteButton">Delete permanently</button>
+            <button type="button" class="button" data-close-modal>Cancel</button>
+            <button type="submit" class="buttonSecondary deleteButton">Delete permanently</button>
           </div>
         </form>
       </div>

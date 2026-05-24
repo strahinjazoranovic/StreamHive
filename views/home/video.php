@@ -86,7 +86,7 @@ $formatTimeAgo = static function ($createdAtValue) {
 
         <div class="navbar-center">
           <div class="searchBar">
-            <input type="text" class="searchInput" placeholder="Zoek" />
+            <input type="text" class="searchInput" placeholder="Search" />
             <button class="iconButton">
               <img
                 src="<?= $basePath ?>/logos/search.svg"
@@ -357,7 +357,7 @@ $formatTimeAgo = static function ($createdAtValue) {
             <section class="watchSuggestionSection">
 
               <?php if (count($sidebarVideos) === 0): ?>
-                <p class="watchSidebarEmpty">No videos found.</p>
+                <p class="watchSidebarEmpty">No suggested videos found.</p>
               <?php else: ?>
                 <div class="watchSuggestionList">
                   <?php foreach (array_slice($sidebarVideos, 0, 18) as $sidebarVideo): ?>

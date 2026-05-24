@@ -105,7 +105,7 @@ a {
 
 .button:hover,
 .buttonSecondary:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
 .button:active,
@@ -118,15 +118,19 @@ a {
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .iconButton img {
   display: block;
 }
 
+.iconButton:hover {
+  transform: translateY(-2px);
+}
+
 .iconButton:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
 .profileMenuWrapper {

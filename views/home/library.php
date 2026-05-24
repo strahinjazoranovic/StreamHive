@@ -90,7 +90,7 @@ $formatTimeAgo = static function ($createdAtValue) {
 
         <div class="navbar-center">
           <div class="searchBar">
-            <input type="text" class="searchInput" placeholder="Zoek" />
+            <input type="text" class="searchInput" placeholder="Search" />
             <button class="iconButton">
               <img
                 src="<?= $basePath ?>/logos/search.svg"

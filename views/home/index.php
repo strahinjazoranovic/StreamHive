@@ -90,7 +90,7 @@ $formatTimeAgo = static function ($createdAtValue) {
 
         <div class="navbar-center">
           <div class="searchBar">
-            <input type="text" class="searchInput" placeholder="Zoek" />
+            <input type="text" class="searchInput" placeholder="Search" />
             <button class="iconButton">
               <img
                 src="<?= $basePath ?>/logos/search.svg"
@@ -249,7 +249,7 @@ $formatTimeAgo = static function ($createdAtValue) {
             </a>
           </div>
         <?php else: ?>
-          <div class="content">
+          <div class="content homeVideoGrid">
             <!-- If the user is logged in and there are no videos in the array, show an empty message -->
             <?php if (count($videos) === 0): ?>
               <p class="emptyState">No videos available.</p>

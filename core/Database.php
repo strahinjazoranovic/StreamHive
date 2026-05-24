@@ -8,7 +8,7 @@ class Database
     public function __construct()
     {
         // Parse the .env file to get the database connection details
-        $env = parse_ini_file(__DIR__ . '/../.env');
+        $env = parse_ini_file(__DIR__ . '/../.env.local');
 
         // Create connection with secret env variables
         $this->connection = mysqli_connect(

@@ -42,17 +42,81 @@ $iniSizeToBytes = static function (string $value): int {
     return (int) $number;
 };
 
+$resolveFfprobeBinary = static function (): ?string {
+    $candidateValues = [];
+    $envKeys = ['FFPROBE_PATH', 'FFPROBE_BINARY'];
+
+    foreach ($envKeys as $envKey) {
+        $runtimeValue = getenv($envKey);
+        if (is_string($runtimeValue) && trim($runtimeValue) !== '') {
+            $candidateValues[] = trim($runtimeValue);
+        }
+
+        $serverValue = $_SERVER[$envKey] ?? null;
+        if (is_string($serverValue) && trim($serverValue) !== '') {
+            $candidateValues[] = trim($serverValue);
+        }
+
+        $envValue = $_ENV[$envKey] ?? null;
+        if (is_string($envValue) && trim($envValue) !== '') {
+            $candidateValues[] = trim($envValue);
+        }
+    }
+
+    $envFilePath = __DIR__ . '/../.env.local';
+    if (is_file($envFilePath)) {
+        $envFileValues = parse_ini_file($envFilePath, false, INI_SCANNER_RAW);
+        if (is_array($envFileValues)) {
+            foreach ($envKeys as $envKey) {
+                $envFileValue = $envFileValues[$envKey] ?? null;
+                if (is_string($envFileValue) && trim($envFileValue) !== '') {
+                    $candidateValues[] = trim($envFileValue);
+                }
+            }
+        }
+    }
+
+    $binaryFilename = DIRECTORY_SEPARATOR === '\\' ? 'ffprobe.exe' : 'ffprobe';
+
+    foreach ($candidateValues as $candidateValue) {
+        $normalizedCandidate = trim($candidateValue, " \t\n\r\0\x0B\"'");
+        if ($normalizedCandidate === '') {
+            continue;
+        }
+
+        if (is_dir($normalizedCandidate)) {
+            $possibleBinaryPath = rtrim($normalizedCandidate, '\\/') . DIRECTORY_SEPARATOR . $binaryFilename;
+            if (is_file($possibleBinaryPath)) {
+                return $possibleBinaryPath;
+            }
+
+            continue;
+        }
+
+        if (is_file($normalizedCandidate)) {
+            return $normalizedCandidate;
+        }
+    }
+
+    return null;
+};
+
 // Extract video duration in seconds using ffprobe
-$extractVideoDurationSeconds = static function (string $videoPath): ?int {
-    if (!is_file($videoPath)) {
+$extractVideoDurationSeconds = static function (string $videoPath) use ($resolveFfprobeBinary): ?int {
+    if (!is_file($videoPath) || !function_exists('shell_exec')) {
         return null;
     }
 
     $escapedVideoPath = escapeshellarg($videoPath);
-    $probeCommands = [
-        'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . $escapedVideoPath,
-        'ffprobe.exe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . $escapedVideoPath,
-    ];
+    $probeCommands = [];
+    $configuredBinaryPath = $resolveFfprobeBinary();
+
+    if ($configuredBinaryPath !== null) {
+        $probeCommands[] = escapeshellarg($configuredBinaryPath) . ' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . $escapedVideoPath . ' 2>&1';
+    }
+
+    $probeCommands[] = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . $escapedVideoPath . ' 2>&1';
+    $probeCommands[] = 'ffprobe.exe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . $escapedVideoPath . ' 2>&1';
 
     foreach ($probeCommands as $probeCommand) {
         $rawDuration = shell_exec($probeCommand);
