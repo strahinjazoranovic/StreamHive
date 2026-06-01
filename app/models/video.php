@@ -12,11 +12,23 @@ class Video
         $this->db = $database->getConnection();
     }
 
+    // Returns SQL SELECT fragment for video reaction counts
+    private function getVideoReactionSelectClause(): string
+    {
+        return "COALESCE(video_reactions.likes_count, 0) AS likes, COALESCE(video_reactions.dislikes_count, 0) AS dislikes";
+    }
+
+    // Returns SQL JOIN fragment for video reaction counts
+    private function getVideoReactionJoinClause(): string
+    {
+        return "LEFT JOIN (SELECT l.video_id, SUM(CASE WHEN l.type = 1 THEN 1 ELSE 0 END) AS likes_count, SUM(CASE WHEN l.type = 0 THEN 1 ELSE 0 END) AS dislikes_count FROM likes l WHERE l.comment_id IS NULL GROUP BY l.video_id) video_reactions ON video_reactions.video_id = v.id ";
+    }
+
     // Fetch all videos that should be visible in public feeds
     public function getAllVideos()
     {
         // Fetch only public videos (and older null values as public fallback)
-        $query = "SELECT v.*, u.username FROM videos v LEFT JOIN users u ON u.id = v.user_id WHERE (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
+        $query = "SELECT v.*, u.username, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id " . $this->getVideoReactionJoinClause() . "WHERE (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
 
         $result = mysqli_query($this->db, $query);
 
@@ -74,7 +86,36 @@ class Video
     public function getVideosByUserId(int $userId): array
     {
         
-        $query = "SELECT v.*, c.name AS category_name FROM videos v LEFT JOIN category c ON c.id = v.category_id WHERE v.user_id = ? ORDER BY v.created_at DESC";
+        $query = "SELECT v.*, c.name AS category_name, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN category c ON c.id = v.category_id " . $this->getVideoReactionJoinClause() . "WHERE v.user_id = ? ORDER BY v.created_at DESC";
+        $stmt = mysqli_prepare($this->db, $query);
+
+        if (!$stmt) {
+            return [];
+        }
+
+        mysqli_stmt_bind_param($stmt, "i", $userId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $videos = [];
+
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $videos[] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
+
+        return $videos;
+    }
+
+    // Fetch only public videos made by a specific user for public profile pages
+    public function getPublicVideosByUserId(int $userId, string $sort = 'latest'): array
+    {
+        $sortValue = strtolower(trim($sort));
+        $orderBy = "v.created_at DESC";
+        $query = "SELECT v.*, u.username, c.name AS category_name, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id " . $this->getVideoReactionJoinClause() . "WHERE v.user_id = ? AND (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY " . $orderBy;
         $stmt = mysqli_prepare($this->db, $query);
 
         if (!$stmt) {
@@ -231,7 +272,7 @@ class Video
     // Fetch one video for direct-watch pages (public + unlisted only)
     public function getVideoByIdForShare(int $videoId): ?array
     {
-        $query = "SELECT v.*, u.username, c.name AS category_name FROM videos v LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id WHERE v.id = ? AND (v.visibilty = 'public' OR v.visibilty = 'unlisted' OR v.visibilty IS NULL) LIMIT 1";
+        $query = "SELECT v.*, u.username, c.name AS category_name, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id " . $this->getVideoReactionJoinClause() . "WHERE v.id = ? AND (v.visibilty = 'public' OR v.visibilty = 'unlisted' OR v.visibilty IS NULL) LIMIT 1";
         $stmt = mysqli_prepare($this->db, $query);
 
         if (!$stmt) {
@@ -245,5 +286,23 @@ class Video
         mysqli_stmt_close($stmt);
 
         return $video ?: null;
+    }
+
+    // Increment views for public or unlisted shared-watch pages
+    public function incrementVideoViewsByIdForShare(int $videoId): bool
+    {
+        $query = "UPDATE videos SET views = views + 1 WHERE id = ? AND (visibilty = 'public' OR visibilty = 'unlisted' OR visibilty IS NULL)";
+        $stmt = mysqli_prepare($this->db, $query);
+
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, "i", $videoId);
+        $ok = mysqli_stmt_execute($stmt);
+        $affectedRows = mysqli_stmt_affected_rows($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok && $affectedRows > 0;
     }
 }

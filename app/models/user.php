@@ -12,9 +12,9 @@ class user
         $this->db = $database->getConnection();
     }
 
+    // Fetch all users
     public function getAllUsers()
     {
-        // Query for fetching all users from the database
         $query = "SELECT * FROM users";
 
         $result = mysqli_query($this->db, $query);
@@ -26,5 +26,24 @@ class user
         }
 
         return $users;
+    }
+
+    // Fetch just the user id
+    public function getUserById(int $userId): ?array
+    {
+        $query = "SELECT id, username, role, created_at FROM users WHERE id = ? LIMIT 1";
+        $stmt = mysqli_prepare($this->db, $query);
+
+        if (!$stmt) {
+            return null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "i", $userId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $user = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+
+        return $user ?: null;
     }
 }

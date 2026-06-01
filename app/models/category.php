@@ -12,9 +12,9 @@ class category
         $this->db = $database->getConnection();
     }
 
+    // Fetch all categories by order of name
     public function getAllCategories()
     {
-        // Fetch all categories
         $query = "SELECT id, name FROM category ORDER BY name ASC";
 
         $result = mysqli_query($this->db, $query);

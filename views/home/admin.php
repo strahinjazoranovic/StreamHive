@@ -8,6 +8,7 @@ if (!isset($basePath)) {
   $basePath = $projectBase . '/public';
 }
 
+$comments = isset($comments) && is_array($comments) ? $comments : [];
 $isLoggedIn = $isLoggedIn ?? false;
 $uploadedVideos = isset($uploadedVideos) && is_array($uploadedVideos) ? $uploadedVideos : [];
 $categories = isset($categories) && is_array($categories) ? $categories : [];
@@ -32,7 +33,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
       type="image/svg+xml"
       href="<?= $basePath ?>/logos/streamHiveLogo.png"
     />
-    <title>StreamHive</title>
+    <title>StreamHive - Channel content</title>
   </head>
   <body data-base-path="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8') ?>">
     <nav class="navbar">
@@ -46,7 +47,9 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
           />
         </button>
 
-        <h1 class="textHeader">Stream<span class="textAccent">Hive</span></h1>
+        <a href="<?= $basePath ?>/index.php?route=home" class="navbarLogoLink">
+          <h1 class="textHeader">Stream<span class="textAccent">Hive</span></h1>
+        </a>
       </div>
 
       <div class="navbar-center">
@@ -91,6 +94,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
             />
           </button>
           <div class="profileMenu" role="menu">
+            <a href="<?= $basePath ?>/index.php?route=user&id=<?= (int)($_SESSION['user_id'] ?? 0) ?>" class="profileMenu-item">My profile</a>
             <a
               href="<?= $basePath ?>/index.php?route=logout"
               class="profileMenu-item"
@@ -211,6 +215,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
           <div>Views</div>
           <div>Comments</div>
           <div>Likes</div>
+          <div>Dislikes</div>
         </div>
 
       <div class="adminVideoList">
@@ -228,6 +233,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
                 ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                 : $basePath . '/logos/streamHiveLogo.png';
               $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
+              $commentCount = (int)($comments[$videoId] ?? 0);
             ?>
             <article class="adminVideoItem">
               <div class="adminVideoMain">
@@ -300,12 +306,17 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
 
                 <div class="adminVideoColumn">
                   <span class="columnTitle">Comments</span>
-                  <span><?= (int)($video['comments'] ?? 0) ?></span>
+                  <span><?= $commentCount ?></span>
                 </div>
 
                 <div class="adminVideoColumn">
                   <span class="columnTitle">Likes</span>
                   <span><?= (int)($video['likes'] ?? 0) ?></span>
+                </div>
+                
+                <div class="adminVideoColumn">
+                  <span class="columnTitle">Dislikes</span>
+                  <span><?= (int)($video['dislikes'] ?? 0) ?></span>
                 </div>
             </article>
             <?php endforeach; ?>

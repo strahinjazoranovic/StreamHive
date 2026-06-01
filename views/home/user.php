@@ -10,6 +10,17 @@ if (!isset($basePath)) {
 if (!isset($videos) || !is_array($videos)) {
   $videos = [];
 }
+$channelUser = isset($channelUser) && is_array($channelUser) ? $channelUser : [];
+$channelName = trim((string)($channelUser['username'] ?? 'StreamHive Creator'));
+$channelUserId = (int)($channelUser['id'] ?? 0);
+
+
+$videoCount = count($videos);
+$channelInitial = strtoupper(substr($channelName !== '' ? $channelName : '?', 0, 1));
+$handleBase = preg_replace('/[^a-zA-Z0-9._-]/', '', str_replace(' ', '', $channelName));
+$channelHandle = '@' . ($handleBase !== '' ? strtolower($handleBase) : 'streamhive_creator');
+$channelCreatedAt = strtotime((string)($channelUser['created_at'] ?? ''));
+$joinedLabel = $channelCreatedAt ? date('M Y', $channelCreatedAt) : null;
 $isLoggedIn = $isLoggedIn ?? false;
 $formatTimeAgo = static function ($createdAtValue) {
   $createdAt = strtotime((string)($createdAtValue ?? ''));
@@ -62,7 +73,7 @@ $formatTimeAgo = static function ($createdAtValue) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="<?= $basePath ?>/css/style.css" />
-    <link rel="stylesheet" href="<?= $basePath ?>/css/video.css" />
+    <link rel="stylesheet" href="<?= $basePath ?>/css/profile.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -74,7 +85,7 @@ $formatTimeAgo = static function ($createdAtValue) {
       type="image/svg+xml"
       href="<?= $basePath ?>/logos/streamHiveLogo.png"
     />
-    <title>StreamHive - Library</title>
+    <title>StreamHive - <?= htmlspecialchars($channelName, ENT_QUOTES, 'UTF-8') ?? 'Profile' ?></title>
   </head>
   <body data-base-path="<?= $basePath ?>">
     <div>
@@ -140,7 +151,7 @@ $formatTimeAgo = static function ($createdAtValue) {
               </button>
               <div class="profileMenu" role="menu">
                 <a href="<?= $basePath ?>/index.php?route=user&id=<?= (int)($_SESSION['user_id'] ?? 0) ?>" class="profileMenu-item">My profile</a>
-                <a href="<?= $basePath ?>/index.php?route=logout" class="profileMenu-item">Logout</a>    
+                <a href="<?= $basePath ?>/index.php?route=logout" class="profileMenu-item">Logout</a>
               </div>
             </div>
           <?php else: ?>
@@ -237,81 +248,75 @@ $formatTimeAgo = static function ($createdAtValue) {
           <?php endif; ?>
         </ul>
       </div>
-
-      <!-- If the user is not logged in show the container-guest which is centered unlinke the container-videos -->
-      <div class="container <?= $isLoggedIn ? 'containerVideos' : 'containerGuest' ?>">
-        <!-- If the user is not logged in show this message -->
-        <?php if (!$isLoggedIn): ?>
-          <div class="loginPrompt">
-            <p class="loginMessage">Please log in or create an account to access videos.</p>
-            <a href="<?= $basePath ?>/index.php?route=login">
-              <button class="button">
-                Log In
-              </button>
-            </a>
-            <a href="<?= $basePath ?>/index.php?route=register">
-              <button class="buttonSecondary">
-                Create an account
-              </button>
-            </a>
+      <div class="container profileContainer">
+        <section class="channelPage">
+          <div class="channelBanner">
+            <div class="channelBannerShade"></div>
           </div>
-        <?php else: ?>
-          <div class="content homeVideoGrid">
-            <!-- If the user is logged in and there are no videos in the array, show an empty message -->
-            <?php if (count($videos) === 0): ?>
-              <p class="emptyState">No videos available.</p>
-            <?php else: ?>
-              <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
+
+          <header class="channelHeader">
+            <div class="channelAvatar" aria-hidden="true">
+              <?= htmlspecialchars($channelInitial, ENT_QUOTES, 'UTF-8') ?>
+            </div>
+            <div class="channelMeta">
+              <h1 class="channelTitle"><?= htmlspecialchars($channelName, ENT_QUOTES, 'UTF-8') ?></h1>
+              <p class="channelStats">
+                <span class="channelHandle"><?= htmlspecialchars($channelHandle, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="channelStatsDot">•</span>
+                <span class="watchUploaderSubscribers"><?= (int)($subscriptions['id'] ?? 0) ?> subscribers</span>
+                <span class="channelStatsDot">•</span>
+                <span><?= $videoCount ?> Video<?= $videoCount === 1 ? '' : 's' ?></span>
+                <?php if ($joinedLabel !== null): ?>
+                  <span class="channelStatsDot">•</span>
+                  <span>Joined <?= htmlspecialchars($joinedLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
+                
+              </p>
+              <button type="button" class="channelSubscribeButton">Subscribe</button>
+            </div>
+          </header>
+
+          <nav class="channelTabs" aria-label="Channel sections">
+            <span class="channelTab isActive">Videos</span>
+          </nav>
+
+          <?php if ($videoCount === 0): ?>
+            <p class="profileEmptyState">This channel has no videos.</p>
+          <?php else: ?>
+            <div class="profileVideoGrid">
               <?php foreach ($videos as $video): ?>
                 <?php
                   $videoId = (int)($video['id'] ?? 0);
-                  $uploaderId = (int)($video['user_id'] ?? 0);
                   $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
                   $thumbnailUrl = $thumbnailFileName !== ''
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
                 ?>
-                <article class="videoCard">
-                  <?php if ($videoId > 0): ?>
-                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
-                  <?php endif; ?>
-                      <div class="videoThumbnailLink">
-                        <img
-                          class="videoThumbnailImage"
-                          src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
-                          alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
-                        >
-                        <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="videoPlayOverlay" aria-hidden="true">▶</span>
-                      </div>
-                      <h2 class="videoTitle">
-                        <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
-                      </h2>
-                  <?php if ($videoId > 0): ?>
-                    </a>
-                  <?php endif; ?>
-                  <?php if ($uploaderId > 0): ?>
-                    <a href="<?= $basePath ?>/index.php?route=user&id=<?= $uploaderId ?>" class="watchUploaderNameLink">
-                      <p class="videoUser">
-                        <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                      </p>
-                    </a>
-                  <?php else: ?>
-                    <p class="videoUser">
-                      <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                    </p>
-                  <?php endif; ?>
-                  <div class="videoDiv">
-                    <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
-                    <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                  </div>
-                </article>
-
+                <a class="profileVideoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                  <article class="profileVideoCard">
+                    <div class="profileVideoThumbnailWrap">
+                      <img
+                        class="profileVideoThumbnailImage"
+                        src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
+                        alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
+                      >
+                      <span class="profileVideoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
+                    </div>
+                    <h2 class="profileVideoTitle">
+                      <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
+                    </h2>
+                    <div class="profileVideoMetaRow">
+                      <p class="profileVideoMeta"><?= (int)($video['views'] ?? 0) ?> views</p>
+                      <span class="profileVideoMetaDot">•</span>
+                      <p class="profileVideoMeta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                    </div>
+                  </article>
+                </a>
               <?php endforeach; ?>
-            <?php endif; ?>
-          </div>
-        <?php endif; ?>
+            </div>
+          <?php endif; ?>
+        </section>
       </div>
     </div>
   </body>

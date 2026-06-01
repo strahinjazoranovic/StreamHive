@@ -1,8 +1,10 @@
 <?php
-
 require_once __DIR__ . '/controller.php';
 require_once __DIR__ . '/../models/video.php';
+require_once __DIR__ . '/../models/comment.php';
 require_once __DIR__ . '/../models/category.php';
+require_once __DIR__ . '/../models/like.php';
+require_once __DIR__ . '/../models/user.php';
 
 class viewController extends Controller
 {
@@ -45,6 +47,12 @@ class viewController extends Controller
             exit;
         }
 
+        // If the view was incremented update the video array by +1
+        $viewWasIncremented = $videoModel->incrementVideoViewsByIdForShare($videoId);
+        if ($viewWasIncremented) {
+            $video['views'] = (int) ($video['views'] ?? 0) + 1;
+        }
+
         $sidebarVideos = array_values(array_filter(
             $videoModel->getAllVideos(),
             static function ($listedVideo) use ($videoId): bool {
@@ -52,11 +60,22 @@ class viewController extends Controller
             }
         ));
 
+        $commentModel = new Comment();
+        $comments = $commentModel->fetchComments($videoId, $isLoggedIn ? (int) $_SESSION['user_id'] : 0);
+        $userReactionType = null;
+
+        if ($isLoggedIn) {
+            $likeModel = new Like();
+            $userReactionType = $likeModel->getUserVideoReaction($videoId, (int) $_SESSION['user_id']);
+        }
+
         $this->render('home/video', [
             'basePath' => $this->getBasePath(),
+            'comments' => $comments,
             'video' => $video,
             'sidebarVideos' => $sidebarVideos,
             'isLoggedIn' => $isLoggedIn,
+            'userReactionType' => $userReactionType,
         ]);
     }
 
@@ -118,9 +137,19 @@ class viewController extends Controller
             ? 'success'
             : ($uploadMessage !== '' ? 'error' : '');
 
+        $commentModel = new Comment();
+        $videoIds = array_map(
+            static function (array $video): int {
+                return (int) ($video['id'] ?? 0);
+            },
+            $uploadedVideos
+        );
+        $comments = $commentModel->fetchCommentCountsByVideoIds($videoIds);
+
         $this->render('home/admin', [
             'basePath' => $this->getBasePath(),
             'isLoggedIn' => $isLoggedIn,
+            'comments' => $comments,
             'uploadedVideos' => $uploadedVideos,
             'categories' => $categories,
             'visibilityOptions' => $visibilityOptions,
@@ -358,6 +387,43 @@ class viewController extends Controller
             'basePath' => $this->getBasePath(),
             'videos' => $videos,
             'isLoggedIn' => $isLoggedIn,
+        ]);
+    }
+
+    public function user(){
+        $this->ensureSessionStarted();
+        $isLoggedIn = isset($_SESSION['user_id']);
+        $channelUserId = (int) ($_GET['id'] ?? 0);
+
+        if ($channelUserId <= 0) {
+            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            exit;
+        }
+
+        $sort = strtolower(trim((string)($_GET['sort'] ?? 'latest')));
+        $allowedSorts = ['latest', 'popular', 'oldest'];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'latest';
+        }
+
+        $userModel = new user();
+        $channelUser = $userModel->getUserById($channelUserId);
+
+        if ($channelUser === null) {
+            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            exit;
+        }
+
+        $videoModel = new Video();
+        $videos = $videoModel->getPublicVideosByUserId($channelUserId, $sort);
+
+        $this->render('home/user', [
+            'basePath' => $this->getBasePath(),
+            'isLoggedIn' => $isLoggedIn,
+            'videos' => $videos,
+            'channelUser' => $channelUser,
+            'selectedSort' => $sort,
         ]);
     }
 }

@@ -1,15 +1,56 @@
 <?php
+//
+// you can find all upload messages type in \app\controllers\viewController under the admin function
+//
 
 require_once __DIR__ . '/../app/models/video.php';
+require_once __DIR__ . '/../app/models/comment.php';
 
+// If there is no session found start an session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Define scriptDir and basePath
 $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
 $basePath = ($scriptDir === '/' || $scriptDir === '.')
     ? ''
     : rtrim($scriptDir, '/');
+
+// Handle comment submission
+if (
+    strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' &&
+    isset($_POST['submit']) &&
+    !isset($_FILES['fileToUpload'])
+) {
+
+    // If the user is not logged in, redirect to login page
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ' . $basePath . '/index.php?route=login');
+        exit;
+    }
+
+    // Define parameters
+    $videoId = (int) ($_POST['videoId'] ?? 0);
+    $userId = (int) ($_SESSION['user_id']);
+    $commentText = trim((string) ($_POST['comment'] ?? ''));
+
+    // If comment is empty return to the video where the uesr is located without inserting
+    if ($commentText === '') {
+        header('Location: ' . $basePath . '/index.php?route=video&id=' . $videoId);
+        exit;
+    }
+
+    // Create a new comment instance
+    $commentModel = new Comment();
+
+    // use the createComment function and create an new comment with the following parameters
+    $commentInserted = $commentModel->createComment(
+        $videoId,
+        $userId,
+        $commentText
+    );
+}
 
 // Redirect to admin page function
 $redirectToAdmin = static function (string $status) use ($basePath): void {
@@ -17,6 +58,7 @@ $redirectToAdmin = static function (string $status) use ($basePath): void {
     exit;
 };
 
+// Converts a php ini size value to bytes.
 $iniSizeToBytes = static function (string $value): int {
     $trimmedValue = trim($value);
 
@@ -42,9 +84,10 @@ $iniSizeToBytes = static function (string $value): int {
     return (int) $number;
 };
 
+// FFProbe binary resolver function
 $resolveFfprobeBinary = static function (): ?string {
     $candidateValues = [];
-    $envKeys = ['FFPROBE_PATH', 'FFPROBE_BINARY'];
+    $envKeys = ['FFPROBE_PATH'];
 
     foreach ($envKeys as $envKey) {
         $runtimeValue = getenv($envKey);
@@ -137,34 +180,41 @@ $extractVideoDurationSeconds = static function (string $videoPath) use ($resolve
     return null;
 };
 
+// If the request method is get and not post redirect to admin with invalid request
 if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     $redirectToAdmin('invalid_request');
 }
 
+// If the user_id is not found in session redirect the user to login page
 if (!isset($_SESSION['user_id'])) {
     header('Location: ' . $basePath . '/index.php?route=login');
     exit;
 }
 
+// Check if current user is admin and if not send him to home
 if (($_SESSION['role'] ?? '') !== 'admin') {
     header('Location: ' . $basePath . '/index.php?route=home');
     exit;
 }
-// If POST body exceeds post_max_size, PHP may drop all $_POST/$_FILES values.
+
+// If POST body exceeds post_max_size(500MB), PHP may drop all $_POST/$_FILES values.
 $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
 $postMaxBytes = $iniSizeToBytes((string) ini_get('post_max_size'));
 if ($contentLength > 0 && $postMaxBytes > 0 && $contentLength > $postMaxBytes) {
     $redirectToAdmin('file_too_large');
 }
 
+// If no file is uploaded redirect to admin with missing file
 if (!isset($_FILES['fileToUpload'])) {
     $redirectToAdmin('missing_file');
 }
 
+// If no thumbnail is uploaded redirect to admin with missing file
 if (!isset($_FILES['thumbnailToUpload'])) {
     $redirectToAdmin('missing_thumbnail');
 }
 
+// Handle upload validation for file
 $uploadError = (int) ($_FILES['fileToUpload']['error'] ?? UPLOAD_ERR_NO_FILE);
 if ($uploadError !== UPLOAD_ERR_OK) {
     if ($uploadError === UPLOAD_ERR_NO_FILE) {
@@ -178,6 +228,7 @@ if ($uploadError !== UPLOAD_ERR_OK) {
     $redirectToAdmin('upload_failed');
 }
 
+// Handle upload validation for thumbnail
 $thumbnailUploadError = (int) ($_FILES['thumbnailToUpload']['error'] ?? UPLOAD_ERR_NO_FILE);
 if ($thumbnailUploadError !== UPLOAD_ERR_OK) {
     if ($thumbnailUploadError === UPLOAD_ERR_NO_FILE) {
@@ -191,13 +242,13 @@ if ($thumbnailUploadError !== UPLOAD_ERR_OK) {
     $redirectToAdmin('thumbnail_upload_failed');
 }
 
+// Map video array that gets posted
 $videoTitle = trim((string)($_POST['videoTitle'] ?? ''));
 $videoDescription = trim((string)($_POST['videoDescription'] ?? ''));
 $videoCategoryRaw = trim((string)($_POST['videoCategory'] ?? ''));
 $videoVisibilityRaw = trim((string)($_POST['videoVisibility'] ?? ''));
 
 // If the videoTitle is empty redirect to admin and show missing_title error
-// you can find all the other upload messages type in \app\controllers\viewController under the admin function
 if ($videoTitle === '') {
     $redirectToAdmin('missing_title');
 }
@@ -214,9 +265,13 @@ if ($videoCategoryRaw !== '') {
     $categoryId = (int) $videoCategoryRaw;
 }
 
+// Create a new video instance
 $videoModel = new Video();
+
+// Fetch visibility options with the function made in the video model
 $visibilityOptions = $videoModel->getVisibilityOptions();
 
+// Redirect if visibility is empty or not in the allowed options list
 if ($videoVisibilityRaw === '' || !in_array($videoVisibilityRaw, $visibilityOptions, true)) {
     $redirectToAdmin('invalid_visibility');
 }
@@ -233,11 +288,13 @@ if ($originalName === '') {
     $redirectToAdmin('missing_file');
 }
 
+// Ensure a thumbnail filename was provided before proceeding
 $thumbnailOriginalName = basename((string) ($_FILES['thumbnailToUpload']['name'] ?? ''));
 if ($thumbnailOriginalName === '') {
     $redirectToAdmin('missing_thumbnail');
 }
 
+// Extract and normalize file extensions for video and thumbnail uploads
 $videoFileType = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 $thumbnailFileType = strtolower(pathinfo($thumbnailOriginalName, PATHINFO_EXTENSION));
 
@@ -274,16 +331,18 @@ if ($thumbnailSize > 5000000) {
     $redirectToAdmin('thumbnail_too_large');
 }
 
-// If the user uploaded an file type that is not in the array off allowed types show invalid_thumbnail_type
+// If the user uploaded an file type that is not in the array of allowed types show invalid_thumbnail_type
 if (!in_array($thumbnailFileType, $allowedThumbnailTypes, true)) {
     $redirectToAdmin('invalid_thumbnail_type');
 }
 
+// Ensure a temporary uploaded video file exists before processing
 $videoTempFilePath = (string) ($_FILES['fileToUpload']['tmp_name'] ?? '');
 if ($videoTempFilePath === '') {
     $redirectToAdmin('upload_failed');
 }
 
+// If the duration of the video is null show duration_extraction_failed error
 $durationSeconds = $extractVideoDurationSeconds($videoTempFilePath);
 if ($durationSeconds === null) {
     $redirectToAdmin('duration_extraction_failed');
@@ -317,10 +376,12 @@ if (!is_dir($thumbnailTargetDir) && !mkdir($thumbnailTargetDir, 0777, true) && !
     $redirectToAdmin('thumbnail_upload_failed');
 }
 
-// If that file already exists in the storage show file_exists
+// If that video file already exists in the storage show file_exists
 if (file_exists($videoTargetFile)) {
     $redirectToAdmin('file_exists');
 }
+
+// If that thumbnail file already exists in the storage show file_exists
 if (file_exists($thumbnailTargetFile)) {
     $redirectToAdmin('file_exists');
 }
@@ -329,6 +390,8 @@ if (file_exists($thumbnailTargetFile)) {
 if (!move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $videoTargetFile)) {
     $redirectToAdmin('upload_failed');
 }
+
+// If the thumbnail failed to upload show upload_failed
 if (!move_uploaded_file($_FILES['thumbnailToUpload']['tmp_name'], $thumbnailTargetFile)) {
     if (file_exists($videoTargetFile)) {
         unlink($videoTargetFile);
@@ -349,6 +412,7 @@ $videoInserted = $videoModel->createVideo(
     $storedThumbnailFilename
 );
 
+// Roll back uploaded files if database insert fails and then redirect with error
 if (!$videoInserted) {
     if (file_exists($videoTargetFile)) {
         unlink($videoTargetFile);
@@ -361,4 +425,5 @@ if (!$videoInserted) {
     $redirectToAdmin('database_error');
 }
 
+// If everything excuted correctly show succes message
 $redirectToAdmin('success');

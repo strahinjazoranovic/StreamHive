@@ -18,34 +18,40 @@ $formatTimeAgo = static function ($createdAtValue) {
     return 'Unknown date';
   }
 
-  // Calculate the difference in seconds between the current time and the created_at time of the video
   $secondsAgo = time() - $createdAt;
 
-  // If the created_at time is in the future, we can return "Just now" or a similar message
   if ($secondsAgo < 0) {
     return 'Just now';
   }
 
-  // If the video was created more than a year ago, show the number of years
+  // Years
   $yearsAgo = (int) floor($secondsAgo / 31536000);
   if ($yearsAgo >= 1) {
     return $yearsAgo . ' year' . ($yearsAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created more than a month ago, show the number of months
+  // Days
   $daysAgo = (int) floor($secondsAgo / 86400);
   if ($daysAgo >= 1) {
     return $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created more than a hour ago, show the number of hours
+  // Hours
   $hoursAgo = (int) floor($secondsAgo / 3600);
   if ($hoursAgo >= 1) {
     return $hoursAgo . ' hour' . ($hoursAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created less than an hour ago, return "Less than 1 hour ago"
-  return 'Less than 1 hour ago';
+  // Minutes
+  $minutesAgo = (int) floor($secondsAgo / 60);
+  if ($minutesAgo >= 1) {
+    return $minutesAgo . ' minute' . ($minutesAgo === 1 ? '' : 's') . ' ago';
+  }
+
+  // Seconds
+  return $secondsAgo <= 0
+    ? 'Just now'
+    : $secondsAgo . ' second' . ($secondsAgo === 1 ? '' : 's') . ' ago';
 };
 
 // Helpful for debugging to see the structure of the videos array
@@ -68,7 +74,7 @@ $formatTimeAgo = static function ($createdAtValue) {
       type="image/svg+xml"
       href="<?= $basePath ?>/logos/streamHiveLogo.png"
     />
-    <title>StreamHive</title>
+    <title>StreamHive - History</title>
   </head>
   <body data-base-path="<?= $basePath ?>">
     <div>
@@ -133,7 +139,8 @@ $formatTimeAgo = static function ($createdAtValue) {
                 />
               </button>
               <div class="profileMenu" role="menu">
-                <a href="<?= $basePath ?>/index.php?route=logout" class="profileMenu-item">Logout</a>
+                <a href="<?= $basePath ?>/index.php?route=user&id=<?= (int)($_SESSION['user_id'] ?? 0) ?>" class="profileMenu-item">My profile</a>
+                <a href="<?= $basePath ?>/index.php?route=logout" class="profileMenu-item">Logout</a>    
               </div>
             </div>
           <?php else: ?>
@@ -159,7 +166,7 @@ $formatTimeAgo = static function ($createdAtValue) {
           <!-- If the user is not logged in show this message -->
           <?php if (!$isLoggedIn): ?>
             <div class="loginPromptSidebar">
-              <p class="loginMessage">Please log in or create to access more pages.</p>
+              <p class="loginMessage">Please log in to access more pages.</p>
               <a href="<?= $basePath ?>/index.php?route=login">
                 <button 
                   href="<?= $basePath ?>/index.php?route=login" 
@@ -243,13 +250,13 @@ $formatTimeAgo = static function ($createdAtValue) {
               </button>
             </a>
             <a href="<?= $basePath ?>/index.php?route=register">
-              <button class="button">
+              <button class="buttonSecondary">
                 Create an account
               </button>
             </a>
           </div>
         <?php else: ?>
-          <div class="content">
+          <div class="content homeVideoGrid">
             <!-- If the user is logged in and there are no videos in the array, show an empty message -->
             <?php if (count($videos) === 0): ?>
               <p class="emptyState">No videos available.</p>
@@ -258,6 +265,7 @@ $formatTimeAgo = static function ($createdAtValue) {
               <?php foreach ($videos as $video): ?>
                 <?php
                   $videoId = (int)($video['id'] ?? 0);
+                  $uploaderId = (int)($video['user_id'] ?? 0);
                   $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
                   $thumbnailUrl = $thumbnailFileName !== ''
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
@@ -266,25 +274,40 @@ $formatTimeAgo = static function ($createdAtValue) {
                 ?>
                 <article class="videoCard">
                   <?php if ($videoId > 0): ?>
-                    <a class="videoThumbnailLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
-                      <img class="videoThumbnailImage" src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>">
-                      <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
-                      <span class="videoPlayOverlay" aria-hidden="true">▶</span>
+                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                  <?php endif; ?>
+                      <div class="videoThumbnailLink">
+                        <img
+                          class="videoThumbnailImage"
+                          src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
+                          alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
+                        >
+                        <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="videoPlayOverlay" aria-hidden="true">▶</span>
+                      </div>
+                      <h2 class="videoTitle">
+                        <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
+                      </h2>
+                  <?php if ($videoId > 0): ?>
+                    </a>
+                  <?php endif; ?>
+                  <?php if ($uploaderId > 0): ?>
+                    <a href="<?= $basePath ?>/index.php?route=user&id=<?= $uploaderId ?>" class="watchUploaderNameLink">
+                      <p class="videoUser">
+                        <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                      </p>
                     </a>
                   <?php else: ?>
-                    <div class="videoThumbnailLink">
-                      <img class="videoThumbnailImage" src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>">
-                      <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
-                      <span class="videoPlayOverlay" aria-hidden="true">▶</span>
-                    </div>
+                    <p class="videoUser">
+                      <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                    </p>
                   <?php endif; ?>
-                  <h2 class="videoTitle"><?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?></h2>
-                  <p class="videoUser"><?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
                   <div class="videoDiv">
                     <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
                     <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                   </div>
                 </article>
+
               <?php endforeach; ?>
             <?php endif; ?>
           </div>

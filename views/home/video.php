@@ -8,8 +8,24 @@ if (!isset($basePath)) {
   $basePath = $projectBase . '/public';
 }
 $isLoggedIn = $isLoggedIn ?? false;
+
+// Reactions(like and dislike)
+$userReactionType = $userReactionType ?? null;
+
+// Comments
+$comments = isset($comments) && is_array($comments) ? $comments : [];
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
+$editingCommentId = (int)($_GET['editComment'] ?? 0);
+
+// Names and initials
+$channelName = trim((string)($channelUser['username'] ?? 'StreamHive Creator'));
+$channelInitial = strtoupper(substr($channelName !== '' ? $channelName : '?', 0, 1));
+
+// Video's
 $video = isset($video) && is_array($video) ? $video : [];
 $sidebarVideos = isset($sidebarVideos) && is_array($sidebarVideos) ? $sidebarVideos : [];
+
+// Format time with the createdAtValue
 $formatTimeAgo = static function ($createdAtValue) {
   $createdAt = strtotime((string)($createdAtValue ?? ''));
 
@@ -17,34 +33,40 @@ $formatTimeAgo = static function ($createdAtValue) {
     return 'Unknown date';
   }
 
-  // Calculate the difference in seconds between the current time and the created_at time of the video
   $secondsAgo = time() - $createdAt;
 
-  // If the created_at time is in the future, we can return "Just now" or a similar message
   if ($secondsAgo < 0) {
     return 'Just now';
   }
 
-  // If the video was created more than a year ago, show the number of years
+  // Years
   $yearsAgo = (int) floor($secondsAgo / 31536000);
   if ($yearsAgo >= 1) {
     return $yearsAgo . ' year' . ($yearsAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created more than a month ago, show the number of months
+  // Days
   $daysAgo = (int) floor($secondsAgo / 86400);
   if ($daysAgo >= 1) {
     return $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created more than a hour ago, show the number of hours
+  // Hours
   $hoursAgo = (int) floor($secondsAgo / 3600);
   if ($hoursAgo >= 1) {
     return $hoursAgo . ' hour' . ($hoursAgo === 1 ? '' : 's') . ' ago';
   }
 
-  // If the video was created less than an hour ago, return "Less than 1 hour ago"
-  return 'Less than 1 hour ago';
+  // Minutes
+  $minutesAgo = (int) floor($secondsAgo / 60);
+  if ($minutesAgo >= 1) {
+    return $minutesAgo . ' minute' . ($minutesAgo === 1 ? '' : 's') . ' ago';
+  }
+
+  // Seconds
+  return $secondsAgo <= 0
+    ? 'Just now'
+    : $secondsAgo . ' second' . ($secondsAgo === 1 ? '' : 's') . ' ago';
 };
 ?>
 <html lang="en">
@@ -64,7 +86,7 @@ $formatTimeAgo = static function ($createdAtValue) {
       type="image/svg+xml"
       href="<?= $basePath ?>/logos/streamHiveLogo.png"
     />
-    <title>StreamHive</title>
+     <title>StreamHive - <?= htmlspecialchars($video['title'] ?? 'Video', ENT_QUOTES, 'UTF-8') ?? 'Video' ?></title>
   </head>
   <body data-base-path="<?= $basePath ?>">
     <div>
@@ -129,6 +151,7 @@ $formatTimeAgo = static function ($createdAtValue) {
                 />
               </button>
               <div class="profileMenu" role="menu">
+                <a href="<?= $basePath ?>/index.php?route=user&id=<?= (int)($_SESSION['user_id'] ?? 0) ?>" class="profileMenu-item">My profile</a>
                 <a href="<?= $basePath ?>/index.php?route=logout" class="profileMenu-item">Logout</a>
               </div>
             </div>
@@ -290,34 +313,34 @@ $formatTimeAgo = static function ($createdAtValue) {
 
               <div class="watchVideoDescriptionCard">
                 <div class="watchUploaderActions">
-                  <img
-                    src="<?= $basePath ?>/logos/profile.svg"
-                    class="watchUploaderProfileImage"
-                    alt="Uploader profile image"
-                    height="40"
-                    width="40"
-                  />
+                  <div class="channelAvatarVideo" aria-hidden="true">
+                    <span class="channelAvatarTextSmall"><?= htmlspecialchars($channelInitial, ENT_QUOTES, 'UTF-8') ?></span>
+                  </div>
                   <div class="watchUploaderInfo">
-                    <p class="watchUploaderName"><?= htmlspecialchars($video['username'] ?? 'Unknown user', ENT_QUOTES, 'UTF-8') ?></p>
+                    <a href="<?= $basePath ?>/index.php?route=user&id=<?= (int)($video['user_id'] ?? 0) ?>" class="watchUploaderNameLink">
+                      <p class="watchUploaderName">
+                        <?= htmlspecialchars($video['username'] ?? 'Unknown user', ENT_QUOTES, 'UTF-8') ?>
+                      </p>
+                    </a>
                     <span class="watchUploaderSubscribers"><?= (int)($subscriptions['id'] ?? 0) ?> subscribers</span>
                   </div>
                   <button type="button" class="watchActionButtonSubscribe" data-watch-action="subscribe" data-video-id="<?= $videoId ?>">
-                  <span>Subscribe </span>
+                    <span>Subscribe</span>
                   </button>
                 </div>
                 <div class="watchActions">
-                  <button type="button" class="watchActionButton" data-watch-action="like" data-video-id="<?= $videoId ?>">
+                  <button type="button" class="watchActionButton watchReactionButton<?= $userReactionType === true ? ' isActive' : '' ?>" data-watch-action="like" data-video-id="<?= $videoId ?>" data-reaction-target="video">
                     <img src="<?= $basePath ?>/logos/like.svg" alt="Like" height="20" width="20">
-                    <span><?= (int)($video['likes'] ?? 0) ?></span>
+                    <span class="watchReactionCount"><?= (int)($video['likes'] ?? 0) ?></span>
                   </button>
-                  <button type="button" class="watchActionButton" data-watch-action="dislike" data-video-id="<?= $videoId ?>">
+                  <button type="button" class="watchActionButton watchReactionButton<?= $userReactionType === false ? ' isActive' : '' ?>" data-watch-action="dislike" data-video-id="<?= $videoId ?>" data-reaction-target="video">
                     <img src="<?= $basePath ?>/logos/dislike.svg" alt="Dislike" height="20" width="20">
-                    <span><?= (int)($video['dislikes'] ?? 0) ?></span>
+                    <span class="watchReactionCount"><?= (int)($video['dislikes'] ?? 0) ?></span>
                   </button>
                   <a
-                  class="watchActionButton"
+                  class="watchActionButtonDownload"
                   href="<?= $basePath ?>/uploads/<?= rawurlencode($fileName) ?>"
-                  download="<?= htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8') ?>"
+                  download="<?= htmlspecialchars($video['title'] ?? 'StreamHive Video', ENT_QUOTES, 'UTF-8') ?>"
                 >
                   Download
                 </a> 
@@ -340,15 +363,109 @@ $formatTimeAgo = static function ($createdAtValue) {
             </section>
 
             <section class="watchCommentsSection watchCommentsSectionUnderVideo">
-              <h3 class="watchSidebarHeading">Comments</h3>
+              <form action="<?= $basePath ?>/index.php?route=manage-comment" method="POST">
+                <h3 class="watchSidebarHeading">
+                  <!-- Show comments count with proper text -->
+                  <?php 
+                    $count = count($comments);
+                    echo $count . ' ' . ($count === 1 ? 'Comment' : 'Comments');
+                  ?>
+                </h3>
+                <div class="watchCommentDiv">
+                  <input type="text" name="comment" class="watchCommentInput" placeholder="Add a comment">
+                  <!-- Button -->
+                  <input type="submit" value="Comment" id="commentToSubmit" name="submit">   
+                </div>  
+                <!-- hidden inputs to pass videoId and userId -->
+                <input type="hidden" name="videoId" value="<?= $videoId ?>">
+                <input type="hidden" name="action" value="create">
+              </form>
 
-              <div class="watchCommentComposer">
-                <input type="text" class="watchCommentInput" placeholder="Add a comment..." disabled>
-              </div>
+              <div class="watchCommentList">
+                <?php if (count($comments) === 0): ?>
+                  <p class="emptyState">No comments found for this video.</p>
+                <?php else: ?>
+                  <?php foreach ($comments as $comment): ?>
+                    <?php
+                      $commentId = (int)($comment['id'] ?? 0);
+                      $commenterId = (int)($comment['user_id'] ?? 0);
+                      $commentContent = (string)($comment['content'] ?? '');
+                      $commentDate = (string)($comment['created_at'] ?? 'Some time ago');
+                      $isEditedComment = preg_match('/\s*\(edited\)$/i', $commentContent) === 1;
+                      $commentTextWithoutEditedSuffix = preg_replace('/\s*\(edited\)$/i', '', $commentContent);
+                      $commentTextWithoutEditedSuffix = trim((string)($commentTextWithoutEditedSuffix ?? $commentContent));
+                      $commentUserReactionType = $comment['current_user_reaction_type'] ?? null;
+                      $commentUserReactionType = $commentUserReactionType === null ? null : (int)$commentUserReactionType;
+                      $isCommentOwner = $isLoggedIn && $currentUserId > 0 && $currentUserId === $commenterId;
+                      $isEditingThisComment = $isCommentOwner && $editingCommentId === $commentId;
+                    ?>
+                    <article class="watchComment" id="comment-<?= $commentId ?>">
+                      <div class="watchCommentContainer">
+                        <div class="channelAvatarVideo" aria-hidden="true">
+                          <span class="channelAvatarTextSmall"><?= htmlspecialchars(strtoupper(substr($comment['username'] ?? '?', 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+                        </div>
+                        <div>
+                          <a href="<?= $basePath ?>/index.php?route=user&id=<?= $commenterId ?>" class="watchUploaderNameLink">
+                            <h3 class="commentUserTitle">
+                              <?= htmlspecialchars($comment['username'] ?? 'StreamHive commentor', ENT_QUOTES, 'UTF-8') ?>
+                              <span class="commentDate"><?= htmlspecialchars($formatTimeAgo($commentDate), ENT_QUOTES, 'UTF-8') ?></span>
+                            </h3>
+                          </a>
 
-              <div class="watchCommentPlaceholderList">
-                <!-- <article class="watchCommentPlaceholder">
-                </article> -->
+                          <!-- If the comment is being edited show this form -->
+                          <?php if ($isEditingThisComment): ?>
+                            <form class="commentEditForm" action="<?= $basePath ?>/index.php?route=manage-comment" method="POST">
+                              <input type="hidden" name="action" value="edit">
+                              <input type="hidden" name="videoId" value="<?= $videoId ?>">
+                              <input type="hidden" name="commentId" value="<?= $commentId ?>">
+                              <input
+                                type="text"
+                                name="comment"
+                                class="watchCommentInput commentEditInput"
+                                value="<?= htmlspecialchars($commentTextWithoutEditedSuffix, ENT_QUOTES, 'UTF-8') ?>"
+                                required
+                              >
+                              <div class="commentEditActions">
+                                <button type="submit" class="commentActionButton commentActionButtonPrimary">Save</button>
+                                <a class="commentActionButton" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>#comment-<?= $commentId ?>">Cancel</a>
+                              </div>
+                            </form>
+                          <!-- But if the comment isn't being edited show this UI -->
+                          <?php else: ?>
+                            <p class="commentText">
+                              <?= htmlspecialchars($commentTextWithoutEditedSuffix !== '' ? $commentTextWithoutEditedSuffix : 'No comment text', ENT_QUOTES, 'UTF-8') ?>
+                              <?php if ($isEditedComment): ?>
+                                <span class="commentEditedTag"> (edited)</span>
+                              <?php endif; ?>
+                            </p>
+                            <div class="watchActions">
+                              <button type="button" class="watchActionButton watchReactionButton<?= $commentUserReactionType === 1 ? ' isActive' : '' ?>" data-watch-action="like" data-comment-id="<?= $commentId ?>" data-reaction-target="comment">
+                                <img src="<?= $basePath ?>/logos/like.svg" alt="Like" height="20" width="20">
+                                <span class="watchReactionCount"><?= (int)($comment['likes'] ?? 0) ?></span>
+                              </button>
+                              <button type="button" class="watchActionButton watchReactionButton<?= $commentUserReactionType === 0 ? ' isActive' : '' ?>" data-watch-action="dislike" data-comment-id="<?= $commentId ?>" data-reaction-target="comment">
+                                <img src="<?= $basePath ?>/logos/dislike.svg" alt="Dislike" height="20" width="20">
+                                <span class="watchReactionCount"><?= (int)($comment['dislikes'] ?? 0) ?></span>
+                              </button>
+                            </div>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+
+                      <?php if ($isCommentOwner && !$isEditingThisComment): ?>
+                        <div class="commentManageActions">
+                          <a class="commentActionButton" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>&editComment=<?= $commentId ?>#comment-<?= $commentId ?>">Edit</a>
+                          <form class="commentDeleteForm" action="<?= $basePath ?>/index.php?route=manage-comment" method="POST">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="videoId" value="<?= $videoId ?>">
+                            <input type="hidden" name="commentId" value="<?= $commentId ?>">
+                            <button type="submit" class="commentActionButton commentActionDelete">Delete</button>
+                          </form> 
+                        </div>
+                      <?php endif; ?>
+                    </article>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </div>
             </section>
           </section>

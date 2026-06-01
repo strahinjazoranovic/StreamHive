@@ -2,6 +2,10 @@
 const hamburgerButton = document.querySelector(".sidebar-toggle");
 const sidebar = document.querySelector(".sidebar");
 
+// Profile and edit menu's
+const profileMenuTrigger = document.querySelector(".profileMenu-trigger");
+const profileMenu = document.querySelector(".profileMenu");
+
 if (hamburgerButton && sidebar) {
   const params = new URLSearchParams(window.location.search);
 
@@ -30,9 +34,7 @@ if (hamburgerButton && sidebar) {
   });
 }
 
-const profileMenuTrigger = document.querySelector(".profileMenu-trigger");
-const profileMenu = document.querySelector(".profileMenu");
-
+// Profile Menu
 if (profileMenuTrigger && profileMenu) {
   const closeProfileMenu = () => {
     profileMenu.classList.remove("open");
@@ -252,9 +254,16 @@ if (watchVideoPlayer) {
   const watchFullscreenToggle = document.querySelector(
     "#watchFullscreenToggle",
   );
-  const watchActionButtons = document.querySelectorAll(".watchActionButton");
+  const watchVideoReactionButtons = document.querySelectorAll(
+    '.watchReactionButton[data-reaction-target="video"]',
+  );
+  const watchCommentReactionButtons = document.querySelectorAll(
+    '.watchReactionButton[data-reaction-target="comment"]',
+  );
   const watchSidebar = document.querySelector(".watchSidebar");
   let isSeeking = false;
+  let isVideoReactionRequestInFlight = false;
+  const commentReactionRequestsInFlight = new Set();
 
   const formatVideoTime = (secondsValue) => {
     const safeSeconds = Number.isFinite(secondsValue)
@@ -283,6 +292,17 @@ if (watchVideoPlayer) {
     }
   };
 
+  const setSeekBarProgress = (progressPercent) => {
+    if (!watchSeekBar) {
+      return;
+    }
+
+    const normalizedProgress = Number.isFinite(progressPercent)
+      ? Math.max(0, Math.min(100, progressPercent))
+      : 0;
+    watchSeekBar.style.setProperty("--seek-progress", `${normalizedProgress}%`);
+  };
+
   const updateSeekBar = () => {
     if (
       !watchSeekBar ||
@@ -296,6 +316,7 @@ if (watchVideoPlayer) {
     const progressPercent =
       (watchVideoPlayer.currentTime / watchVideoPlayer.duration) * 100;
     watchSeekBar.value = String(progressPercent);
+    setSeekBarProgress(progressPercent);
   };
 
   const togglePlay = () => {
@@ -335,10 +356,42 @@ if (watchVideoPlayer) {
     }
   };
 
+  const applyReactionState = (
+    reactionButtons,
+    currentReaction,
+    likesCount,
+    dislikesCount,
+  ) => {
+    const normalizedLikes = Number.isFinite(likesCount) ? likesCount : 0;
+    const normalizedDislikes = Number.isFinite(dislikesCount)
+      ? dislikesCount
+      : 0;
+    reactionButtons.forEach((buttonElement) => {
+      const actionType = buttonElement.dataset.watchAction || "";
+      const countElement = buttonElement.querySelector(".watchReactionCount");
+      const isActive =
+        currentReaction !== null &&
+        (currentReaction === "like" || currentReaction === "dislike") &&
+        currentReaction === actionType;
+
+      buttonElement.classList.toggle("isActive", isActive);
+
+      if (!countElement) {
+        return;
+      }
+
+      countElement.textContent =
+        actionType === "like"
+          ? String(normalizedLikes)
+          : String(normalizedDislikes);
+    });
+  };
+
   watchVideoPlayer.addEventListener("loadedmetadata", () => {
     if (watchDuration) {
       watchDuration.textContent = formatVideoTime(watchVideoPlayer.duration);
     }
+    setSeekBarProgress(0);
     syncSidebarHeight();
   });
 
@@ -366,6 +419,7 @@ if (watchVideoPlayer) {
   if (watchSeekBar) {
     watchSeekBar.addEventListener("input", () => {
       isSeeking = true;
+      setSeekBarProgress(Number(watchSeekBar.value));
     });
 
     watchSeekBar.addEventListener("change", () => {
@@ -376,6 +430,7 @@ if (watchVideoPlayer) {
         const seekPercent = Number(watchSeekBar.value) / 100;
         watchVideoPlayer.currentTime = watchVideoPlayer.duration * seekPercent;
       }
+      setSeekBarProgress(Number(watchSeekBar.value));
 
       isSeeking = false;
     });
@@ -426,21 +481,134 @@ if (watchVideoPlayer) {
     });
   }
 
-  watchActionButtons.forEach((actionButton) => {
-    actionButton.addEventListener("click", () => {
-      const actionType = actionButton.dataset.watchAction || "";
+  if (watchVideoReactionButtons.length > 0) {
+    watchVideoReactionButtons.forEach((reactionButton) => {
+      reactionButton.addEventListener("click", async () => {
+        const reaction = reactionButton.dataset.watchAction || "";
+        const videoId = Number(reactionButton.dataset.videoId || "0");
 
-      watchActionButtons.forEach((buttonElement) => {
-        const buttonActionType = buttonElement.dataset.watchAction || "";
+        if (
+          isVideoReactionRequestInFlight ||
+          videoId <= 0 ||
+          (reaction !== "like" && reaction !== "dislike")
+        ) {
+          return;
+        }
+        isVideoReactionRequestInFlight = true;
 
-        if (buttonActionType !== actionType) {
-          buttonElement.classList.remove("isActive");
+        try {
+          const response = await fetch(
+            `${watchBasePath}/index.php?route=react-video`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams({
+                videoId: String(videoId),
+                reaction,
+              }).toString(),
+            },
+          );
+
+          let payload = null;
+
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = null;
+          }
+
+          if (response.status === 401 && payload && payload.redirect) {
+            window.location.href = payload.redirect;
+            return;
+          }
+
+          if (!response.ok || !payload || payload.success !== true) {
+            return;
+          }
+
+          applyReactionState(
+            watchVideoReactionButtons,
+            payload.currentReaction ?? null,
+            Number(payload.likes ?? 0),
+            Number(payload.dislikes ?? 0),
+          );
+        } finally {
+          isVideoReactionRequestInFlight = false;
         }
       });
-
-      actionButton.classList.toggle("isActive");
     });
-  });
+  }
+
+  if (watchCommentReactionButtons.length > 0) {
+    watchCommentReactionButtons.forEach((reactionButton) => {
+      reactionButton.addEventListener("click", async () => {
+        const reaction = reactionButton.dataset.watchAction || "";
+        const commentId = Number(reactionButton.dataset.commentId || "0");
+
+        if (
+          commentId <= 0 ||
+          commentReactionRequestsInFlight.has(commentId) ||
+          (reaction !== "like" && reaction !== "dislike")
+        ) {
+          return;
+        }
+
+        commentReactionRequestsInFlight.add(commentId);
+
+        try {
+          const response = await fetch(
+            `${watchBasePath}/index.php?route=react-comment`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams({
+                commentId: String(commentId),
+                reaction,
+              }).toString(),
+            },
+          );
+
+          let payload = null;
+
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = null;
+          }
+
+          if (response.status === 401 && payload && payload.redirect) {
+            window.location.href = payload.redirect;
+            return;
+          }
+
+          if (!response.ok || !payload || payload.success !== true) {
+            return;
+          }
+
+          const currentCommentReactionButtons = document.querySelectorAll(
+            `.watchReactionButton[data-reaction-target="comment"][data-comment-id="${commentId}"]`,
+          );
+
+          applyReactionState(
+            currentCommentReactionButtons,
+            payload.currentReaction ?? null,
+            Number(payload.likes ?? 0),
+            Number(payload.dislikes ?? 0),
+          );
+        } finally {
+          commentReactionRequestsInFlight.delete(commentId);
+        }
+      });
+    });
+  }
 
   window.addEventListener("resize", syncSidebarHeight);
 
@@ -453,5 +621,6 @@ if (watchVideoPlayer) {
 
   syncSidebarHeight();
   updateMuteIcon();
+  setSeekBarProgress(Number(watchSeekBar ? watchSeekBar.value : "0"));
   updatePlayIcons();
-} 
+}

@@ -1,0 +1,194 @@
+.profileContainer {
+  display: block;
+}
+
+.channelPage {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.channelHeader {
+  display: flex;
+  gap: 22px;
+  padding: 0px 0px 10px 0px;
+  align-items: center;
+}
+
+.channelMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.channelTitle {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.12;
+  font-weight: 700;
+}
+
+.channelStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #bbbbbb;
+  font-size: 1rem;
+}
+
+.channelHandle {
+  color: #f5f5f5;
+  font-weight: 600;
+}
+
+.channelStatsDot {
+  color: #8a8a8a;
+}
+
+.channelDescription {
+  color: #d2d2d2;
+  font-size: 1rem;
+}
+
+.channelSubscribeButton {
+  width: fit-content;
+  background: #f5f5f5;
+  color: #0e0e0e;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+}
+
+.channelSubscribeButton:hover {
+  background: #ffffff;
+}
+
+.channelTabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #2a2a2a;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 1px;
+}
+
+.channelTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  min-width: max-content;
+  color: #b6b6b6;
+  font-size: 1rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+}
+
+.channelTab.isActive {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
+.profileVideoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.profileVideoCardLink {
+  display: block;
+}
+
+.profileVideoCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profileVideoThumbnailWrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #131313;
+}
+
+.profileVideoThumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profileVideoDurationBadge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.profileVideoTitle {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  font-weight: 600;
+  margin: 0;
+  color: #f5f5f5;
+}
+
+.profileVideoMetaRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profileVideoMeta,
+.profileVideoMetaDot {
+  font-size: 0.95rem;
+  color: #bcbcbc;
+}
+
+.profileEmptyState {
+  margin-top: 20px;
+  color: #bdbdbd;
+}
+
+@media (max-width: 1180px) {
+  .profileVideoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .channelHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .channelAvatar {
+    width: 112px;
+    height: 112px;
+    min-width: 112px;
+    font-size: 2.4rem;
+  }
+
+  .profileVideoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .channelSortRow {
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+}
