@@ -22,7 +22,8 @@
 }
 
 .homeVideoGrid .videoCard {
-  height: 100%;
+  height: auto;
+  align-self: start;
 }
 
 .homeVideoGrid .videoThumbnailLink {
@@ -49,7 +50,11 @@
 
 .videoUser {
   color: #d1d1d1;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+}
+
+.video-meta {
+  margin: 0;
 }
 
 .videoDiv {

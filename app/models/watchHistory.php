@@ -15,7 +15,7 @@ class watchHistory
     // Get all watched videos for an user
     public function getUserWatchedVideos(int $userId): array
     {
-        $query = "SELECT wh.video_id, v.*, u.username FROM watch_history wh INNER JOIN videos v ON v.id = wh.video_id LEFT JOIN users u ON u.id = v.user_id WHERE wh.user_id = ? ORDER BY wh.created_at DESC, wh.video_id DESC";
+        $query = "SELECT wh.video_id, v.*, u.username, c.name AS category_name FROM watch_history wh INNER JOIN videos v ON v.id = wh.video_id LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id WHERE wh.user_id = ? ORDER BY wh.created_at DESC, wh.video_id DESC";
 
         $stmt = mysqli_prepare($this->db, $query);
 

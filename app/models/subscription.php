@@ -113,7 +113,7 @@ class Subscription
     // Fetch subscribed videos for an user/subscriber
     public function getSubscribedVideosByUserId(int $subscriberId): array
     {
-        $query = "SELECT DISTINCT v.*, u.username FROM subscriptions s INNER JOIN videos v ON v.user_id = s.creator_id LEFT JOIN users u ON u.id = v.user_id WHERE s.subscriber_id = ? AND (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
+        $query = "SELECT DISTINCT v.*, u.username, c.name AS category_name FROM subscriptions s INNER JOIN videos v ON v.user_id = s.creator_id LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id WHERE s.subscriber_id = ? AND (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
         $stmt = mysqli_prepare($this->db, $query);
 
         if (!$stmt) {

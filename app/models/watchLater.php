@@ -15,7 +15,7 @@ class watchLaterVideos
     // Fetch all watch later videos for an user
     public function getUserWatchLaterVideos(int $userId): array
     {
-        $query = "SELECT wl.video_id, v.*, u.username FROM watch_later wl INNER JOIN videos v ON v.id = wl.video_id LEFT JOIN users u ON u.id = v.user_id WHERE wl.user_id = ? ORDER BY wl.video_id DESC";
+        $query = "SELECT wl.video_id, v.*, u.username, c.name AS category_name FROM watch_later wl INNER JOIN videos v ON v.id = wl.video_id LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id WHERE wl.user_id = ? ORDER BY wl.video_id DESC";
         $statement = mysqli_prepare($this->db, $query);
 
         if (!$statement) {

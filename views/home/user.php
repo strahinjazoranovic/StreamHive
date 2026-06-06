@@ -315,6 +315,7 @@ $formatTimeAgo = static function ($createdAtValue) {
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
+                  $videoCategoryName = trim((string)($video['category_name'] ?? ''));
                 ?>
                 <a class="profileVideoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
                   <article class="profileVideoCard">
@@ -333,6 +334,10 @@ $formatTimeAgo = static function ($createdAtValue) {
                       <p class="profileVideoMeta"><?= (int)($video['views'] ?? 0) ?> views</p>
                       <span class="profileVideoMetaDot">•</span>
                       <p class="profileVideoMeta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                      <?php if ($videoCategoryName !== ''): ?>
+                        <span class="profileVideoMetaDot">•</span>
+                        <p class="profileVideoMeta">#<?= htmlspecialchars($videoCategoryName, ENT_QUOTES, 'UTF-8') ?></p>
+                      <?php endif; ?>
                     </div>
                   </article>
                 </a>

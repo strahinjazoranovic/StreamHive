@@ -271,6 +271,7 @@ $formatTimeAgo = static function ($createdAtValue) {
           $videoId = (int)($video['id'] ?? 0);
           $fileName = (string)($video['filename'] ?? '');
           $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+          $videoCategoryName = trim((string)($video['category_name'] ?? ''));
         ?>
         <div class="watchLayout">
           <section class="watchMainColumn">
@@ -386,6 +387,10 @@ $formatTimeAgo = static function ($createdAtValue) {
                   <span class="watchMetaItem"><?= (int)($video['views'] ?? 0) ?> views</span>
                   <span class="watchMetaDot">•</span>
                   <span class="watchMetaItem"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                  <?php if ($videoCategoryName !== ''): ?>
+                    <span class="watchMetaDot">•</span>
+                    <span class="watchMetaItem">#<?= htmlspecialchars($videoCategoryName, ENT_QUOTES, 'UTF-8') ?></span>
+                  <?php endif; ?>
                 </div>   
                  <?php if (!empty($video['description'])): ?>
                   <p class="watchVideoDescription"><?= htmlspecialchars((string) $video['description'], ENT_QUOTES, 'UTF-8') ?></p>

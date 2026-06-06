@@ -274,6 +274,7 @@ $formatTimeAgo = static function ($createdAtValue) {
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
+                  $videoCategoryName = trim((string)($video['category_name'] ?? ''));
                 ?>
                 <article class="videoCard">
                   <?php if ($videoId > 0): ?>

@@ -28,7 +28,7 @@ class Video
     public function getAllVideos()
     {
         // Fetch only public videos (and older null values as public fallback)
-        $query = "SELECT v.*, u.username, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id " . $this->getVideoReactionJoinClause() . "WHERE (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
+        $query = "SELECT v.*, u.username, c.name AS category_name, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id " . $this->getVideoReactionJoinClause() . "WHERE (v.visibilty = 'public' OR v.visibilty IS NULL) ORDER BY v.created_at DESC";
 
         $result = mysqli_query($this->db, $query);
 

@@ -62,6 +62,72 @@ if (profileMenuTrigger && profileMenu) {
   });
 }
 
+// Search bar handling (client-side filtering)
+const searchInput = document.querySelector(".searchInput");
+const searchButton = document.querySelector(".searchBar .iconButton");
+
+if (searchInput) {
+  const searchableElements = [
+    ...document.querySelectorAll(".homeVideoGrid .videoCard"),
+    ...document.querySelectorAll(".subscriptionProfileCard"),
+    ...document.querySelectorAll(".profileVideoCardLink"),
+    ...document.querySelectorAll(".watchSuggestionCard"),
+  ];
+  const searchableContainer = document.querySelector(
+    ".homeVideoGrid, .profileVideoGrid, .watchSuggestionList",
+  );
+  let searchEmptyState = null;
+
+  if (searchableContainer) {
+    searchEmptyState = document.createElement("p");
+    searchEmptyState.className = "emptyState";
+    searchEmptyState.style.display = "none";
+    searchableContainer.appendChild(searchEmptyState);
+  }
+
+  const applyClientSearch = () => {
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    searchableElements.forEach((element) => {
+      const searchableText = element.textContent.toLowerCase();
+      const isMatch = searchTerm === "" || searchableText.includes(searchTerm);
+
+      element.style.display = isMatch ? "" : "none";
+
+      if (isMatch) {
+        visibleCount += 1;
+      }
+    });
+
+    if (searchEmptyState) {
+      const hasNoMatch = searchableElements.length > 0 && visibleCount === 0;
+      searchEmptyState.textContent =
+        searchTerm === ""
+          ? ""
+          : `No videos found for "${searchInput.value.trim()}".`;
+      searchEmptyState.style.display = hasNoMatch ? "block" : "none";
+    }
+  };
+
+  searchInput.addEventListener("input", applyClientSearch);
+
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyClientSearch();
+    }
+  });
+
+  if (searchButton) {
+    searchButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      applyClientSearch();
+      searchInput.focus();
+    });
+  }
+}
+
 // Admin page modal handling
 const adminGrid = document.querySelector(".videoGridAdmin");
 
