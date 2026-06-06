@@ -9,8 +9,10 @@ if (!isset($basePath)) {
 }
 $isLoggedIn = $isLoggedIn ?? false;
 
-// Reactions(like and dislike)
-$userReactionType = $userReactionType ?? null;
+// Subscription status
+$userSubscribe = (bool)($userSubscribe ?? false);
+$subscriberCount = (int)($subscriberCount ?? 0);
+$canSubscribe = (bool)($canSubscribe ?? false);
 
 // Comments
 $comments = isset($comments) && is_array($comments) ? $comments : [];
@@ -18,12 +20,26 @@ $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 $editingCommentId = (int)($_GET['editComment'] ?? 0);
 
 // Names and initials
+$channelUser = isset($channelUser) && is_array($channelUser) ? $channelUser : [];
 $channelName = trim((string)($channelUser['username'] ?? 'StreamHive Creator'));
 $channelInitial = strtoupper(substr($channelName !== '' ? $channelName : '?', 0, 1));
 
 // Video's
 $video = isset($video) && is_array($video) ? $video : [];
 $sidebarVideos = isset($sidebarVideos) && is_array($sidebarVideos) ? $sidebarVideos : [];
+
+// Watch later status
+$watchLaterVideos = isset($watchLaterVideos) && is_array($watchLaterVideos) ? $watchLaterVideos : [];
+$isVideoInWatchLater = false;
+$currentVideoId = (int)($video['id'] ?? 0);
+
+// Check if the current video is in the user's watch later list
+foreach ($watchLaterVideos as $watchLaterVideo) {
+  if ((int)($watchLaterVideo['video_id'] ?? 0) === $currentVideoId) {
+    $isVideoInWatchLater = true;
+    break;
+  }
+}
 
 // Format time with the createdAtValue
 $formatTimeAgo = static function ($createdAtValue) {
@@ -88,7 +104,7 @@ $formatTimeAgo = static function ($createdAtValue) {
     />
      <title>StreamHive - <?= htmlspecialchars($video['title'] ?? 'Video', ENT_QUOTES, 'UTF-8') ?? 'Video' ?></title>
   </head>
-  <body data-base-path="<?= $basePath ?>">
+  <body data-base-path="<?= $basePath ?>" class="bodyVideo">
     <div>
       <nav class="navbar">
         <div class="navbarLeft">
@@ -322,11 +338,20 @@ $formatTimeAgo = static function ($createdAtValue) {
                         <?= htmlspecialchars($video['username'] ?? 'Unknown user', ENT_QUOTES, 'UTF-8') ?>
                       </p>
                     </a>
-                    <span class="watchUploaderSubscribers"><?= (int)($subscriptions['id'] ?? 0) ?> subscribers</span>
+                    <span class="watchUploaderSubscribers" data-channel-id="<?= (int)($video['user_id'] ?? 0) ?>"><?= $subscriberCount ?> subscriber<?= $subscriberCount === 1 ? '' : 's' ?></span>
                   </div>
-                  <button type="button" class="watchActionButtonSubscribe" data-watch-action="subscribe" data-video-id="<?= $videoId ?>">
-                    <span>Subscribe</span>
-                  </button>
+                  <?php if ($canSubscribe): ?>
+                    <button
+                      type="button"
+                      class="watchActionButtonSubscribe<?= $userSubscribe ? ' isActive' : '' ?>"
+                      data-watch-action="subscribe"
+                      data-channel-id="<?= (int)($video['user_id'] ?? 0) ?>"
+                      data-subscribed-label="Subscribed"
+                      data-unsubscribed-label="Subscribe"
+                    >
+                      <?= $userSubscribe ? 'Subscribed' : 'Subscribe' ?>
+                    </button>
+                  <?php endif; ?>
                 </div>
                 <div class="watchActions">
                   <button type="button" class="watchActionButton watchReactionButton<?= $userReactionType === true ? ' isActive' : '' ?>" data-watch-action="like" data-video-id="<?= $videoId ?>" data-reaction-target="video">
@@ -337,13 +362,22 @@ $formatTimeAgo = static function ($createdAtValue) {
                     <img src="<?= $basePath ?>/logos/dislike.svg" alt="Dislike" height="20" width="20">
                     <span class="watchReactionCount"><?= (int)($video['dislikes'] ?? 0) ?></span>
                   </button>
+                  <button 
+                    type="button" 
+                    class="watchActionButton watchLaterButton<?= $isVideoInWatchLater ? ' isActive' : '' ?>" 
+                    data-watch-action="watch-later"
+                    data-video-id="<?= $videoId ?>"
+                    data-user-id="<?= (int)($_SESSION['user_id'] ?? 0) ?>"
+                    >
+                    <?= $isVideoInWatchLater ? 'Saved' : 'Watch later' ?>
+                  </button>
                   <a
-                  class="watchActionButtonDownload"
-                  href="<?= $basePath ?>/uploads/<?= rawurlencode($fileName) ?>"
-                  download="<?= htmlspecialchars($video['title'] ?? 'StreamHive Video', ENT_QUOTES, 'UTF-8') ?>"
-                >
-                  Download
-                </a> 
+                    class="watchActionButtonDownload"
+                    href="<?= $basePath ?>/uploads/<?= rawurlencode($fileName) ?>"
+                    download="<?= htmlspecialchars($video['title'] ?? 'StreamHive Video', ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                    Download
+                  </a> 
                 </div>
               </div>
 

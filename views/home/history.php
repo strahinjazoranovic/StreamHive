@@ -7,10 +7,13 @@ if (!isset($basePath)) {
   $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
   $basePath = $projectBase . '/public';
 }
+// Ensure $videos is defined and is an array to prevent errors in the view
 if (!isset($videos) || !is_array($videos)) {
   $videos = [];
 }
 $isLoggedIn = $isLoggedIn ?? false;
+
+// Format time
 $formatTimeAgo = static function ($createdAtValue) {
   $createdAt = strtotime((string)($createdAtValue ?? ''));
 
@@ -240,6 +243,10 @@ $formatTimeAgo = static function ($createdAtValue) {
 
       <!-- If the user is not logged in show the container-guest which is centered unlinke the container-videos -->
       <div class="container <?= $isLoggedIn ? 'containerVideos' : 'containerGuest' ?>">
+        <div class="titleHeader">
+          <h2>History</h2>
+        </div>
+
         <!-- If the user is not logged in show this message -->
         <?php if (!$isLoggedIn): ?>
           <div class="loginPrompt">
@@ -259,7 +266,7 @@ $formatTimeAgo = static function ($createdAtValue) {
           <div class="content homeVideoGrid">
             <!-- If the user is logged in and there are no videos in the array, show an empty message -->
             <?php if (count($videos) === 0): ?>
-              <p class="emptyState">No videos available.</p>
+              <p class="emptyState">No history available.</p>
             <?php else: ?>
               <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
               <?php foreach ($videos as $video): ?>
@@ -303,7 +310,12 @@ $formatTimeAgo = static function ($createdAtValue) {
                     </p>
                   <?php endif; ?>
                   <div class="videoDiv">
-                    <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
+                    <p class="video-meta">
+                      <?php
+                        $views = (int)($video['views'] ?? 0);
+                        echo $views . ' ' . ($views === 1 ? 'View' : 'views');
+                      ?>
+                    </p>
                     <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                   </div>
                 </article>

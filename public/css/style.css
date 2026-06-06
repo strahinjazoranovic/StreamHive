@@ -240,6 +240,13 @@ a {
   pointer-events: auto;
 }
 
+body:not(.sidebar-ready) .sidebar,
+body:not(.sidebar-ready) .container,
+body:not(.sidebar-ready) .errorContainer,
+body:not(.sidebar-ready) .videoGridAdmin {
+  transition: none;
+}
+
 .sidebarMenu {
   list-style: none;
   padding: 0;
@@ -310,6 +317,27 @@ a {
 }
 
 .sidebar.open ~ .container {
+  margin-left: 250px;
+}
+
+.errorContainer {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 24px;
+  margin-left: 0;
+  transition: margin-left 0.4s ease;
+}
+
+.errorTitle {
+  font-size: 2rem;
+  color: #ff0000;
+}
+
+.sidebar.open ~ .errorContainer {
   margin-left: 250px;
 }
 

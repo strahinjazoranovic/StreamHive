@@ -1,7 +1,5 @@
 <?php
-//
 // you can find all upload messages type in \app\controllers\viewController under the admin function
-//
 
 require_once __DIR__ . '/../app/models/video.php';
 require_once __DIR__ . '/../app/models/comment.php';
@@ -191,9 +189,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Check if current user is admin and if not send him to home
+// Check if current user is admin and if not send him to error page
 if (($_SESSION['role'] ?? '') !== 'admin') {
-    header('Location: ' . $basePath . '/index.php?route=home');
+    header('Location: ' . $basePath . '/index.php?route=error&message=' . urlencode('You do not have permission to access this function.'));
     exit;
 }
 

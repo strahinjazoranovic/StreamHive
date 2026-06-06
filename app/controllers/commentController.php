@@ -24,11 +24,13 @@ class commentController extends Controller
     {
         $this->ensureSessionStarted();
 
+        // Only allow POST requests to manage comments
         if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=incorrect_method&code=405');
             exit;
         }
 
+        // If the user is not logged in redirect him to the login page
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . $this->getBasePath() . '/index.php?route=login');
             exit;
@@ -36,8 +38,9 @@ class commentController extends Controller
 
         $videoId = (int) ($_POST['videoId'] ?? 0);
 
+        // If the video id is not valid make the user return to an error page
         if ($videoId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
             exit;
         }
 

@@ -8,6 +8,10 @@
   gap: 16px;
 }
 
+.bodyVideo {
+  background-color: #111111;
+}
+
 .homeVideoGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
@@ -223,6 +227,7 @@
 
 .watchSeekBar,
 .watchVolumeBar {
+  --volume-progress: 100%;
   -webkit-appearance: none;
   appearance: none;
   background: #4d4d4d;
@@ -322,7 +327,13 @@
 
 .watchVolumeBar {
   border: none;
-  background: rgba(0, 0, 0, 0.5);
+  background: linear-gradient(
+    to right,
+    #ff0000 0%,
+    #ff0000 var(--volume-progress),
+    #b5b5b5 var(--volume-progress),
+    #b5b5b5 100%
+  );
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
@@ -332,6 +343,23 @@
   width: 80px;
   height: 4px;
   border-radius: 999px;
+}
+.watchVolumeBar::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.watchVolumeBar::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #b5b5b5;
+}
+
+.watchVolumeBar::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #ff0000;
 }
 
 .watchVolumeBar::-webkit-slider-thumb {
@@ -379,6 +407,8 @@
 .watchActions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -388,13 +418,26 @@
   background: #222222;
   color: #ffffff;
   border-radius: 8px;
-  padding: 12px;
+  padding: 0 12px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
   gap: 8px;
   cursor: pointer;
   font-size: 0.92rem;
   font-family: "Poppins", sans-serif;
+}
+
+.watchReactionButton {
+  min-width: 78px;
+}
+
+.watchLaterButton {
+  min-width: 112px;
 }
 
 .watchActionButtonSubscribe {
@@ -406,6 +449,10 @@
   height: 40px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
   gap: 8px;
   cursor: pointer;
   font-size: 0.92rem;
@@ -420,6 +467,7 @@
 
 .watchActionButtonSubscribe.isActive {
   background: #ffffff;
+  color: #000000;
 }
 
 .watchActionButton.isActive {
@@ -433,11 +481,8 @@
 
 .watchVideoDescriptionCard {
   display: grid;
-  grid-template-columns:
-    minmax(400px, 1fr)
-    129px
-    99px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
   margin-bottom: 12px;
 }
 
@@ -575,7 +620,7 @@
 .watchCommentInput {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid black;
+  border: none;
   border-bottom: 2px solid;
   background: none;
   color: #ffffff;
@@ -650,6 +695,7 @@
 }
 
 .commentEditInput {
+  width: 100%;
   border-top: none;
   border-left: none;
   border-right: none;
@@ -741,6 +787,66 @@
 
 .editMenu.open {
   display: block;
+}
+
+.subscriptionHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.subscriptionHeaderActions {
+  display: flex;
+  align-items: center;
+}
+
+.subscriptionHeaderActions a {
+  text-decoration: none;
+}
+
+.subscriptionProfileCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subscriptionProfileLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.subscriptionProfileAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(145deg, #ff0000, #cc0000);
+}
+
+.subscriptionProfileMeta {
+  gap: 12px;
+}
+
+.subscriptionProfileJoined {
+  color: #bcbcbc;
+}
+
+.titleHeader {
+  margin-bottom: 12px;
+}
+
+.subscriptionHeader h2,
+.titleHeader h2 {
+  font-size: 2rem;
+  font-weight: 700;
 }
 
 @media (max-width: 1200px) {

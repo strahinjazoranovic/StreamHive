@@ -7,6 +7,8 @@ if (!isset($basePath)) {
   $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
   $basePath = $projectBase . '/public';
 }
+
+// Ensure $videos is defined and is an array to prevent errors in the view
 if (!isset($videos) || !is_array($videos)) {
   $videos = [];
 }

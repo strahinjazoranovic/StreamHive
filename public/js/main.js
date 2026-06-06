@@ -7,21 +7,16 @@ const profileMenuTrigger = document.querySelector(".profileMenu-trigger");
 const profileMenu = document.querySelector(".profileMenu");
 
 if (hamburgerButton && sidebar) {
+  document.body.classList.remove("sidebar-ready");
   const params = new URLSearchParams(window.location.search);
-
   const isVideoPage = params.get("route") === "video";
-
-  // If the user is on the video page the sidebar should always start in closed state
-  if (isVideoPage) {
-    sidebar.classList.remove("open");
-    localStorage.setItem("sidebar", "closed");
+  const sidebarState = localStorage.getItem("sidebar");
+  // Watch page starts closed, while keeping the user's saved preference untouched.
+  // Other pages restore the user's latest toggle choice.
+  if (!isVideoPage && sidebarState === "open") {
+    sidebar.classList.add("open");
   } else {
-    // Other pages it should start in the state it was set to by user
-    if (localStorage.getItem("sidebar") === "open") {
-      sidebar.classList.add("open");
-    } else {
-      sidebar.classList.remove("open");
-    }
+    sidebar.classList.remove("open");
   }
 
   hamburgerButton.addEventListener("click", () => {
@@ -31,6 +26,10 @@ if (hamburgerButton && sidebar) {
       "sidebar",
       sidebar.classList.contains("open") ? "open" : "closed",
     );
+  });
+
+  requestAnimationFrame(() => {
+    document.body.classList.add("sidebar-ready");
   });
 }
 
@@ -260,10 +259,14 @@ if (watchVideoPlayer) {
   const watchCommentReactionButtons = document.querySelectorAll(
     '.watchReactionButton[data-reaction-target="comment"]',
   );
+  const watchLaterButtons = document.querySelectorAll(
+    '.watchLaterButton[data-watch-action="watch-later"][data-video-id]',
+  );
   const watchSidebar = document.querySelector(".watchSidebar");
   let isSeeking = false;
   let isVideoReactionRequestInFlight = false;
   const commentReactionRequestsInFlight = new Set();
+  const watchLaterRequestsInFlight = new Set();
 
   const formatVideoTime = (secondsValue) => {
     const safeSeconds = Number.isFinite(secondsValue)
@@ -301,6 +304,20 @@ if (watchVideoPlayer) {
       ? Math.max(0, Math.min(100, progressPercent))
       : 0;
     watchSeekBar.style.setProperty("--seek-progress", `${normalizedProgress}%`);
+  };
+
+  const setVolumeBarProgress = (progressPercent) => {
+    if (!watchVolumeBar) {
+      return;
+    }
+
+    const normalizedProgress = Number.isFinite(progressPercent)
+      ? Math.max(0, Math.min(100, progressPercent))
+      : 0;
+    watchVolumeBar.style.setProperty(
+      "--volume-progress",
+      `${normalizedProgress}%`,
+    );
   };
 
   const updateSeekBar = () => {
@@ -356,6 +373,7 @@ if (watchVideoPlayer) {
     }
   };
 
+  // Applies the reaction state given to the reaction button
   const applyReactionState = (
     reactionButtons,
     currentReaction,
@@ -444,6 +462,7 @@ if (watchVideoPlayer) {
       );
       watchVideoPlayer.volume = volumeValue;
       watchVideoPlayer.muted = volumeValue === 0;
+      setVolumeBarProgress(volumeValue * 100);
       updateMuteIcon();
     });
   }
@@ -461,6 +480,11 @@ if (watchVideoPlayer) {
         watchVideoPlayer.volume = 1;
         watchVolumeBar.value = "1";
       }
+
+      setVolumeBarProgress(
+        Number(watchVolumeBar ? watchVolumeBar.value : watchVideoPlayer.volume) *
+          100,
+      );
     });
   }
 
@@ -610,6 +634,72 @@ if (watchVideoPlayer) {
     });
   }
 
+  if (watchLaterButtons.length > 0) {
+    watchLaterButtons.forEach((watchLaterButton) => {
+      watchLaterButton.addEventListener("click", async () => {
+        const videoId = Number(watchLaterButton.dataset.videoId || "0");
+
+        if (videoId <= 0 || watchLaterRequestsInFlight.has(videoId)) {
+          return;
+        }
+
+        const currentWatchLaterButtons = document.querySelectorAll(
+          `.watchLaterButton[data-watch-action="watch-later"][data-video-id="${videoId}"]`,
+        );
+
+        watchLaterRequestsInFlight.add(videoId);
+        currentWatchLaterButtons.forEach((buttonElement) => {
+          buttonElement.disabled = true;
+        });
+
+        try {
+          const response = await fetch(
+            `${watchBasePath}/index.php?route=watch-later`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams({
+                videoId: String(videoId),
+              }).toString(),
+            },
+          );
+
+          let payload = null;
+
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = null;
+          }
+
+          if (response.status === 401 && payload && payload.redirect) {
+            window.location.href = payload.redirect;
+            return;
+          }
+
+          if (!response.ok || !payload || payload.success !== true) {
+            return;
+          }
+          const nextIsSaved = payload.isSaved === true;
+
+          currentWatchLaterButtons.forEach((buttonElement) => {
+            buttonElement.classList.toggle("isActive", nextIsSaved);
+            buttonElement.textContent = nextIsSaved ? "Saved" : "Watch later";
+          });
+        } finally {
+          currentWatchLaterButtons.forEach((buttonElement) => {
+            buttonElement.disabled = false;
+          });
+          watchLaterRequestsInFlight.delete(videoId);
+        }
+      });
+    });
+  }
+
   window.addEventListener("resize", syncSidebarHeight);
 
   if (typeof ResizeObserver !== "undefined" && watchPlayerContainer) {
@@ -622,5 +712,116 @@ if (watchVideoPlayer) {
   syncSidebarHeight();
   updateMuteIcon();
   setSeekBarProgress(Number(watchSeekBar ? watchSeekBar.value : "0"));
+  setVolumeBarProgress(Number(watchVolumeBar ? watchVolumeBar.value : "0") * 100);
   updatePlayIcons();
+}
+
+// Subscription handling
+const subscriptionButtons = document.querySelectorAll(
+  '[data-watch-action="subscribe"][data-channel-id]',
+);
+
+if (subscriptionButtons.length > 0) {
+  const subscriptionBasePath = document.body.dataset.basePath || "";
+  const subscriptionRequestsInFlight = new Set();
+
+  const formatSubscriptionCount = (countValue) => {
+    const normalizedCount = Number.isFinite(countValue)
+      ? Math.max(0, Math.floor(countValue))
+      : 0;
+
+    return `${normalizedCount} subscriber${normalizedCount === 1 ? "" : "s"}`;
+  };
+
+  const getChannelSubscribeButtons = (channelId) =>
+    document.querySelectorAll(
+      `[data-watch-action="subscribe"][data-channel-id="${channelId}"]`,
+    );
+
+  const updateChannelSubscriberCount = (channelId, subscriberCount) => {
+    const subscriberCountElements = document.querySelectorAll(
+      `.watchUploaderSubscribers[data-channel-id="${channelId}"]`,
+    );
+
+    subscriberCountElements.forEach((subscriberCountElement) => {
+      subscriberCountElement.textContent =
+        formatSubscriptionCount(subscriberCount);
+    });
+  };
+
+  const applySubscriptionState = (buttonElements, isSubscribed) => {
+    buttonElements.forEach((buttonElement) => {
+      const subscribedLabel =
+        buttonElement.dataset.subscribedLabel || "Subscribed";
+      const unsubscribedLabel =
+        buttonElement.dataset.unsubscribedLabel || "Subscribe";
+      const shouldBeSubscribed = isSubscribed === true;
+
+      buttonElement.classList.toggle("isActive", shouldBeSubscribed);
+      buttonElement.textContent = shouldBeSubscribed
+        ? subscribedLabel
+        : unsubscribedLabel;
+    });
+  };
+
+  subscriptionButtons.forEach((subscriptionButton) => {
+    subscriptionButton.addEventListener("click", async () => {
+      const channelId = Number(subscriptionButton.dataset.channelId || "0");
+
+      if (channelId <= 0 || subscriptionRequestsInFlight.has(channelId)) {
+        return;
+      }
+
+      const channelButtons = getChannelSubscribeButtons(channelId);
+      subscriptionRequestsInFlight.add(channelId);
+      channelButtons.forEach((buttonElement) => {
+        buttonElement.disabled = true;
+      });
+
+      try {
+        const response = await fetch(
+          `${subscriptionBasePath}/index.php?route=react-subscription`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded; charset=UTF-8",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            body: new URLSearchParams({
+              channelId: String(channelId),
+            }).toString(),
+          },
+        );
+
+        let payload = null;
+
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = null;
+        }
+
+        if (response.status === 401 && payload && payload.redirect) {
+          window.location.href = payload.redirect;
+          return;
+        }
+
+        if (!response.ok || !payload || payload.success !== true) {
+          return;
+        }
+
+        applySubscriptionState(channelButtons, payload.isSubscribed === true);
+        updateChannelSubscriberCount(
+          channelId,
+          Number(payload.subscriberCount ?? 0),
+        );
+      } finally {
+        channelButtons.forEach((buttonElement) => {
+          buttonElement.disabled = false;
+        });
+        subscriptionRequestsInFlight.delete(channelId);
+      }
+    });
+  });
 }

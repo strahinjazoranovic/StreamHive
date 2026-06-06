@@ -34,7 +34,7 @@ class AuthController extends Controller
 
         session_destroy();
 
-        header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+        header('Location: ' . $this->getBasePath() . '/index.php?route=login');
         exit;
     }
     public function login()

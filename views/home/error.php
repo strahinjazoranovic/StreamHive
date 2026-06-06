@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../../app/helpers/videoDuration.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -7,58 +6,21 @@ if (!isset($basePath)) {
   $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
   $basePath = $projectBase . '/public';
 }
-// Ensure $videos is defined and is an array to prevent errors in the view
-if (!isset($videos) || !is_array($videos)) {
-  $videos = [];
-}
-$isLoggedIn = $isLoggedIn ?? false;
-$formatTimeAgo = static function ($createdAtValue) {
-  $createdAt = strtotime((string)($createdAtValue ?? ''));
 
-  if (!$createdAt) {
-    return 'Unknown date';
-  }
+// Available error messages
+$errors = [
+    'admin_required' => 'Access denied, you must be an admin to access this page',
+    'not_found' => 'Requested resource not found.',
+    'invalid_user' => 'The user ID is invalid.',
+    'incorrect_method' => 'Incorrect request method. Please use POST.'
+];
 
-  $secondsAgo = time() - $createdAt;
+$type = $_GET['type'] ?? '';
 
-  if ($secondsAgo < 0) {
-    return 'Just now';
-  }
-
-  // Years
-  $yearsAgo = (int) floor($secondsAgo / 31536000);
-  if ($yearsAgo >= 1) {
-    return $yearsAgo . ' year' . ($yearsAgo === 1 ? '' : 's') . ' ago';
-  }
-
-  // Days
-  $daysAgo = (int) floor($secondsAgo / 86400);
-  if ($daysAgo >= 1) {
-    return $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' ago';
-  }
-
-  // Hours
-  $hoursAgo = (int) floor($secondsAgo / 3600);
-  if ($hoursAgo >= 1) {
-    return $hoursAgo . ' hour' . ($hoursAgo === 1 ? '' : 's') . ' ago';
-  }
-
-  // Minutes
-  $minutesAgo = (int) floor($secondsAgo / 60);
-  if ($minutesAgo >= 1) {
-    return $minutesAgo . ' minute' . ($minutesAgo === 1 ? '' : 's') . ' ago';
-  }
-
-  // Seconds
-  return $secondsAgo <= 0
-    ? 'Just now'
-    : $secondsAgo . ' second' . ($secondsAgo === 1 ? '' : 's') . ' ago';
-};
-
-// Helpful for debugging to see the structure of the videos array
-// print_r($videos);
+// Get the error message and default to something went wrong
+$message = $errors[$type] ?? 'Something went wrong.';
 ?>
-<html lang="en">
+<html lang="en">  
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -75,7 +37,7 @@ $formatTimeAgo = static function ($createdAtValue) {
       type="image/svg+xml"
       href="<?= $basePath ?>/logos/streamHiveLogo.png"
     />
-    <title>StreamHive - Library</title>
+    <title>StreamHive - Error</title>
   </head>
   <body data-base-path="<?= $basePath ?>">
     <div>
@@ -239,84 +201,11 @@ $formatTimeAgo = static function ($createdAtValue) {
         </ul>
       </div>
 
-      <!-- If the user is not logged in show the container-guest which is centered unlinke the container-videos -->
-      <div class="container <?= $isLoggedIn ? 'containerVideos' : 'containerGuest' ?>">
-        <div class="titleHeader">
-          <h2>Library</h2>
-        </div>
-
-        <!-- If the user is not logged in show this message -->
-        <?php if (!$isLoggedIn): ?>
-          <div class="loginPrompt">
-            <p class="loginMessage">Please log in or create an account to access videos.</p>
-            <a href="<?= $basePath ?>/index.php?route=login">
-              <button class="button">
-                Log In
-              </button>
-            </a>
-            <a href="<?= $basePath ?>/index.php?route=register">
-              <button class="buttonSecondary">
-                Create an account
-              </button>
-            </a>
-          </div>
-        <?php else: ?>
-          <div class="content homeVideoGrid">
-            <!-- If the user is logged in and there are no videos in the array, show an empty message -->
-            <?php if (count($videos) === 0): ?>
-              <p class="emptyState">No videos saved to watch later.</p>
-            <?php else: ?>
-              <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
-              <?php foreach ($videos as $video): ?>
-                <?php
-                  $videoId = (int)($video['id'] ?? 0);
-                  $uploaderId = (int)($video['user_id'] ?? 0);
-                  $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
-                  $thumbnailUrl = $thumbnailFileName !== ''
-                    ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
-                    : $basePath . '/logos/streamHiveLogo.png';
-                  $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
-                ?>
-                <article class="videoCard">
-                  <?php if ($videoId > 0): ?>
-                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
-                  <?php endif; ?>
-                      <div class="videoThumbnailLink">
-                        <img
-                          class="videoThumbnailImage"
-                          src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
-                          alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
-                        >
-                        <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="videoPlayOverlay" aria-hidden="true">▶</span>
-                      </div>
-                      <h2 class="videoTitle">
-                        <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
-                      </h2>
-                  <?php if ($videoId > 0): ?>
-                    </a>
-                  <?php endif; ?>
-                  <?php if ($uploaderId > 0): ?>
-                    <a href="<?= $basePath ?>/index.php?route=user&id=<?= $uploaderId ?>" class="watchUploaderNameLink">
-                      <p class="videoUser">
-                        <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                      </p>
-                    </a>
-                  <?php else: ?>
-                    <p class="videoUser">
-                      <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                    </p>
-                  <?php endif; ?>
-                  <div class="videoDiv">
-                    <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
-                    <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                  </div>
-                </article>
-
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </div>
-        <?php endif; ?>
+      <div class="errorContainer">
+        <h1 class="errorTitle">Error</h1>
+        <!-- Display the error message based on the type -->
+        <p><?php echo $message; ?></p>
+        <button class="button" onclick="window.history.back()">Go back</button>
       </div>
     </div>
   </body>

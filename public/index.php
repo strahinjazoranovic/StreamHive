@@ -3,7 +3,7 @@ require_once __DIR__ . '/../core/Router.php';
 require_once __DIR__ . '/../app/controllers/viewController.php';
 require_once __DIR__ . '/../app/controllers/authController.php';
 require_once __DIR__ . '/../app/controllers/commentController.php';
-require_once __DIR__ . '/../app/controllers/reactionController.php';
+require_once __DIR__ . '/../app/controllers/buttonController.php';
 
 // Create a new router instance
 $router = new Router();
@@ -19,19 +19,31 @@ $router->get('/admin', [viewController::class, 'admin']);
 $router->get('/subscriptions', [viewController::class, 'subscriptions']);
 $router->get('/library', [viewController::class, 'library']);
 $router->get('/history', [viewController::class, 'history']);
+$router->get('/error', [viewController::class, 'error']);
+
 
 // Get routes for authentication
 $router->get('/login', [AuthController::class, 'login']);
 $router->get('/register', [AuthController::class, 'register']);
 $router->get('/logout', [AuthController::class, 'logout']);
 
-// Post routes
+// Post routes for authentication
 $router->post('/login', [AuthController::class, 'login']);
 $router->post('/register', [AuthController::class, 'register']);
+
+// Post routes for editing videos and comments
 $router->post('/manage-video', [viewController::class, 'manageVideo']);
 $router->post('/manage-comment', [commentController::class, 'manage']);
-$router->post('/react-video', [reactionController::class, 'video']);
-$router->post('/react-comment', [reactionController::class, 'comment']);
+
+// Post routes for reactions
+$router->post('/react-video', [buttonController::class, 'video']);
+$router->post('/react-comment', [buttonController::class, 'comment']);
+$router->post('/react-subscription', [buttonController::class, 'subscription']);
+
+// Post route for watch later
+$router->post('/watch-later', [buttonController::class, 'watchLater']);
+
+
 
 $requestedPath = '/';
 $route = $_GET['route'] ?? '';

@@ -7,9 +7,16 @@ if (!isset($basePath)) {
   $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
   $basePath = $projectBase . '/public';
 }
+// Ensure $videos is defined and is an array to prevent errors in the view
 if (!isset($videos) || !is_array($videos)) {
   $videos = [];
 }
+if (!isset($profiles) || !is_array($profiles)) {
+  $profiles = [];
+}
+$selectedView = in_array(($selectedView ?? 'videos'), ['videos', 'profiles'], true)
+  ? $selectedView
+  : 'videos';
 $isLoggedIn = $isLoggedIn ?? false;
 $formatTimeAgo = static function ($createdAtValue) {
   $createdAt = strtotime((string)($createdAtValue ?? ''));
@@ -256,59 +263,109 @@ $formatTimeAgo = static function ($createdAtValue) {
             </a>
           </div>
         <?php else: ?>
+            <div class="subscriptionHeader">
+              <h2>Subscriptions</h2>
+              <div class="subscriptionHeaderActions">
+                <?php if ($selectedView === 'profiles'): ?>
+                  <a class="buttonSecondary" href="<?= $basePath ?>/index.php?route=subscriptions">View subscribed videos</a>
+                <?php else: ?>
+                  <a class="button" href="<?= $basePath ?>/index.php?route=subscriptions&view=profiles">View all subscriptions</a>
+                <?php endif; ?>
+              </div>
+            </div>
           <div class="content homeVideoGrid">
-            <!-- If the user is logged in and there are no videos in the array, show an empty message -->
-            <?php if (count($videos) === 0): ?>
-              <p class="emptyState">No videos available.</p>
+            <?php if ($selectedView === 'profiles'): ?>
+              <?php if (count($profiles) === 0): ?>
+                <p class="emptyState">No subscribed channels available.</p>
+              <?php else: ?>
+                <?php foreach ($profiles as $profile): ?>
+                  <?php
+                    $profileId = (int)($profile['id'] ?? 0);
+                    $profileUsername = trim((string)($profile['username'] ?? ''));
+                    $profileDisplayName = $profileUsername !== '' ? $profileUsername : 'Unknown user';
+                    $profileInitial = strtoupper(substr($profileDisplayName, 0, 1));
+                    $profileSubscriberCount = (int)($profile['subscriber_count'] ?? 0);
+                    $profileVideoCount = (int)($profile['public_video_count'] ?? 0);
+                  ?>
+                  <article class="videoCard subscriptionProfileCard">
+                    <?php if ($profileId > 0): ?>
+                      <a class="subscriptionProfileLink" href="<?= $basePath ?>/index.php?route=user&id=<?= $profileId ?>">
+                    <?php endif; ?>
+                        <div class="subscriptionProfileAvatar" aria-hidden="true">
+                          <?= htmlspecialchars($profileInitial !== '' ? $profileInitial : '?', ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                        <h2 class="videoTitle"><?= htmlspecialchars($profileDisplayName, ENT_QUOTES, 'UTF-8') ?></h2>
+                    <?php if ($profileId > 0): ?>
+                      </a>
+                    <?php endif; ?>
+                    <div class="videoDiv subscriptionProfileMeta">
+                      <p class="video-meta">
+                        <?= $profileSubscriberCount ?> subscriber<?= $profileSubscriberCount === 1 ? '' : 's' ?>
+                      </p>
+                      <p class="video-meta">
+                        <?= $profileVideoCount ?> video<?= $profileVideoCount === 1 ? '' : 's' ?>
+                      </p>
+                    </div>
+                    <p class="video-meta subscriptionProfileJoined">
+                      Joined <?= htmlspecialchars($formatTimeAgo($profile['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                    </p>
+                  </article>
+                <?php endforeach; ?>
+              <?php endif; ?>
             <?php else: ?>
-              <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
-              <?php foreach ($videos as $video): ?>
-                <?php
-                  $videoId = (int)($video['id'] ?? 0);
-                  $uploaderId = (int)($video['user_id'] ?? 0);
-                  $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
-                  $thumbnailUrl = $thumbnailFileName !== ''
-                    ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
-                    : $basePath . '/logos/streamHiveLogo.png';
-                  $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
-                ?>
-                <article class="videoCard">
-                  <?php if ($videoId > 0): ?>
-                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
-                  <?php endif; ?>
-                      <div class="videoThumbnailLink">
-                        <img
-                          class="videoThumbnailImage"
-                          src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
-                          alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
-                        >
-                        <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="videoPlayOverlay" aria-hidden="true">▶</span>
-                      </div>
-                      <h2 class="videoTitle">
-                        <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
-                      </h2>
-                  <?php if ($videoId > 0): ?>
-                    </a>
-                  <?php endif; ?>
-                  <?php if ($uploaderId > 0): ?>
-                    <a href="<?= $basePath ?>/index.php?route=user&id=<?= $uploaderId ?>" class="watchUploaderNameLink">
+              <!-- If the user is logged in and there are no videos in the array, show an empty message -->
+              <?php if (count($videos) === 0): ?>
+                <p class="emptyState">No subscribed videos available.</p>
+              <?php else: ?>
+                <!-- But if there are videos, loop through every one of them and show a card for every video found in the array -->
+                <?php foreach ($videos as $video): ?>
+                  <?php
+                    $videoId = (int)($video['id'] ?? 0);
+                    $uploaderId = (int)($video['user_id'] ?? 0);
+                    $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
+                    $thumbnailUrl = $thumbnailFileName !== ''
+                      ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
+                      : $basePath . '/logos/streamHiveLogo.png';
+                    $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
+                  ?>
+                  <article class="videoCard">
+                    <?php if ($videoId > 0): ?>
+                      <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                    <?php endif; ?>        
+                        <div class="videoThumbnailLink">
+                          <img
+                            class="videoThumbnailImage"
+                            src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>"
+                            alt="<?= htmlspecialchars($video['title'] ?? 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>"
+                          >
+                          <span class="videoDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
+                          <span class="videoPlayOverlay" aria-hidden="true">▶</span>
+                        </div>
+                        <h2 class="videoTitle">
+                          <?= htmlspecialchars($video['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8') ?>
+                        </h2>
+                    <?php if ($videoId > 0): ?>
+                      </a>
+                    <?php endif; ?>
+                    <?php if ($uploaderId > 0): ?>
+                      <a href="<?= $basePath ?>/index.php?route=user&id=<?= $uploaderId ?>" class="watchUploaderNameLink">
+                        <p class="videoUser">
+                          <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                      </a>
+                    <?php else: ?>
                       <p class="videoUser">
                         <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                       </p>
-                    </a>
-                  <?php else: ?>
-                    <p class="videoUser">
-                      <?= htmlspecialchars($video['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                    </p>
-                  <?php endif; ?>
-                  <div class="videoDiv">
-                    <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
-                    <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                  </div>
-                </article>
+                    <?php endif; ?>
+                    <div class="videoDiv">
+                      <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
+                      <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                    </div>
+                  </article>
 
-              <?php endforeach; ?>
+                <?php endforeach; ?>
+              <?php endif; ?>
             <?php endif; ?>
           </div>
         <?php endif; ?>

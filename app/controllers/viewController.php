@@ -1,19 +1,44 @@
 <?php
+// Import controller
 require_once __DIR__ . '/controller.php';
+
+// Import models
 require_once __DIR__ . '/../models/video.php';
 require_once __DIR__ . '/../models/comment.php';
 require_once __DIR__ . '/../models/category.php';
 require_once __DIR__ . '/../models/like.php';
 require_once __DIR__ . '/../models/user.php';
+require_once __DIR__ . '/../models/subscription.php';
+require_once __DIR__ . '/../models/watchLater.php'; 
+require_once __DIR__ . '/../models/watchHistory.php';
 
+// View controller for rendering pages and handling page related logic which extends the controller class
 class viewController extends Controller
 {
+    // Ensure session is started before accessing session variables
     private function ensureSessionStarted()
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
     }
+
+    // Function that decides if the view should increment or not
+    private function shouldIncrementVideoViewForSession(int $videoId): bool
+    {
+        if (!isset($_SESSION['viewed_videos']) || !is_array($_SESSION['viewed_videos'])) {
+            $_SESSION['viewed_videos'] = [];
+        }
+
+        if (($_SESSION['viewed_videos'][$videoId] ?? false) === true) {
+            return false;
+        }
+
+        $_SESSION['viewed_videos'][$videoId] = true;
+        return true;
+    }
+
+    // Home page with the video feed
     public function index()
     {
         $this->ensureSessionStarted();
@@ -21,6 +46,7 @@ class viewController extends Controller
         $videos = $videoModel->getAllVideos();
         $isLoggedIn = isset($_SESSION['user_id']);
 
+        // Render the home page with all data
         $this->render('home/index', [
             'basePath' => $this->getBasePath(),
             'videos' => $videos,
@@ -28,31 +54,51 @@ class viewController extends Controller
         ]);
     }
 
+    // Video page with the video player, comments and information about the video
     public function video()
     {
         $this->ensureSessionStarted();
         $isLoggedIn = isset($_SESSION['user_id']);
         $videoId = (int) ($_GET['id'] ?? 0);
 
+        // If the video id is not valid make the user return to an error page
         if ($videoId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
             exit;
         }
 
         $videoModel = new Video();
         $video = $videoModel->getVideoByIdForShare($videoId);
 
+        // If the video id doesn't exist make the user return to an error page
         if ($video === null) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
             exit;
         }
 
-        // If the view was incremented update the video array by +1
-        $viewWasIncremented = $videoModel->incrementVideoViewsByIdForShare($videoId);
-        if ($viewWasIncremented) {
-            $video['views'] = (int) ($video['views'] ?? 0) + 1;
+        // Default to false
+        $viewWasIncremented = false;
+
+        // If the function was true increment the view on the video
+        if ($this->shouldIncrementVideoViewForSession($videoId)) {
+            $viewWasIncremented = $videoModel->incrementVideoViewsByIdForShare($videoId);
+
+            // If the view was increment also add the video to the watch history if the user is logged in
+            if ($viewWasIncremented) {
+                $video['views'] = (int) ($video['views'] ?? 0) + 1;
+
+                // If the user is logged save the watched video
+                if ($isLoggedIn) {
+                    $watchHistoryModel = new watchHistory();
+                    $watchHistoryModel->addWatchedVideo((int) $_SESSION['user_id'], $videoId);
+                }
+            } else {
+                // If the code above failed remove the view from the video
+                unset($_SESSION['viewed_videos'][$videoId]);
+            }
         }
 
+        // Sidebar videos that use an filter to fetch
         $sidebarVideos = array_values(array_filter(
             $videoModel->getAllVideos(),
             static function ($listedVideo) use ($videoId): bool {
@@ -60,15 +106,45 @@ class viewController extends Controller
             }
         ));
 
+        // Comments for the video
         $commentModel = new Comment();
         $comments = $commentModel->fetchComments($videoId, $isLoggedIn ? (int) $_SESSION['user_id'] : 0);
-        $userReactionType = null;
 
+        // Define current user and channel id
+        $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+        $channelUserId = (int) ($video['user_id'] ?? 0);
+
+        // Bind reaction and subscription status for the current user
+        $userReactionType = null;
+        $userSubscribe = false;
+        $canSubscribe = $channelUserId > 0 && $currentUserId !== $channelUserId;
+
+        // Watch later for the video
+        $watchLaterVideos = [];
         if ($isLoggedIn) {
-            $likeModel = new Like();
-            $userReactionType = $likeModel->getUserVideoReaction($videoId, (int) $_SESSION['user_id']);
+            $watchLaterModel = new watchLaterVideos();
+            $watchLaterVideos = $watchLaterModel->getUserWatchLaterVideos((int) $_SESSION['user_id']);
         }
 
+        // Subscriber count for the channel
+        $subscriptionModel = new Subscription();
+        $subscriberCount = $channelUserId > 0
+            ? $subscriptionModel->getSubscriptionCount($channelUserId)
+            : 0;
+
+        // If the user is logged im get their likes, dislike and subscription status
+        if ($isLoggedIn) {
+            // Likes
+            $likeModel = new Like();
+            $userReactionType = $likeModel->getUserVideoReaction($videoId, (int) $_SESSION['user_id']);
+
+            // Subscription status for the current channel
+            if ($canSubscribe) {
+                $userSubscribe = $subscriptionModel->isUserSubscribed($currentUserId, $channelUserId);
+            }
+        }
+
+        // Render the video page with all data
         $this->render('home/video', [
             'basePath' => $this->getBasePath(),
             'comments' => $comments,
@@ -76,9 +152,14 @@ class viewController extends Controller
             'sidebarVideos' => $sidebarVideos,
             'isLoggedIn' => $isLoggedIn,
             'userReactionType' => $userReactionType,
+            'userSubscribe' => $userSubscribe,
+            'subscriberCount' => $subscriberCount,
+            'canSubscribe' => $canSubscribe,
+            'watchLaterVideos' => $watchLaterVideos,
         ]);
     }
 
+    // Admin page for uploading videos and managing them
     public function admin()
     {
         $this->ensureSessionStarted();
@@ -89,8 +170,9 @@ class viewController extends Controller
             exit;
         }
 
+        // If an user is not an admin send him to the error page
         if (($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required&code=1001  ');
             exit;
         }
 
@@ -146,6 +228,7 @@ class viewController extends Controller
         );
         $comments = $commentModel->fetchCommentCountsByVideoIds($videoIds);
 
+        // Render the admin page with all data
         $this->render('home/admin', [
             'basePath' => $this->getBasePath(),
             'isLoggedIn' => $isLoggedIn,
@@ -158,30 +241,157 @@ class viewController extends Controller
         ]);
     }
 
+    // Page with subscribed channels and their videos
+    public function subscriptions(){
+        $this->ensureSessionStarted();
+        $isLoggedIn = isset($_SESSION['user_id']);
+
+        // If the user is not logged in return him to the login page
+        if (!$isLoggedIn) {
+            header('Location: ' . $this->getBasePath() . '/index.php?route=login');
+            exit;
+        }
+
+        $subscriptionModel = new Subscription();
+        $selectedView = strtolower(trim((string)($_GET['view'] ?? 'videos')));
+        $allowedViews = ['videos', 'profiles'];
+
+        if (!in_array($selectedView, $allowedViews, true)) {
+            $selectedView = 'videos';
+        }
+
+        // Fetch subscribed videos
+        $videos = $subscriptionModel->getSubscribedVideosByUserId((int) $_SESSION['user_id']);
+
+        // Fetch creator profiles
+        $profiles = $subscriptionModel->getSubscribedCreatorsByUserId((int) $_SESSION['user_id']);
+
+        // Render the subscripition page with all data
+        $this->render('home/subscription', [
+            'basePath' => $this->getBasePath(),
+            'videos' => $videos,
+            'profiles' => $profiles,
+            'selectedView' => $selectedView,
+            'isLoggedIn' => $isLoggedIn,
+        ]);
+    }
+
+    // Page with watch later
+    public function library(){
+        $this->ensureSessionStarted();
+        $isLoggedIn = isset($_SESSION['user_id']);
+
+        $watchLaterModel = new watchLaterVideos();
+        $videos = $watchLaterModel->getUserWatchLaterVideos((int) ($_SESSION['user_id'] ?? 0));
+
+        // Render the library page with all data
+        $this->render('home/library', [
+            'basePath' => $this->getBasePath(),
+            'videos' => $videos,
+            'isLoggedIn' => $isLoggedIn,
+        ]);
+    }
+
+    // History page
+    public function history(){
+        $this->ensureSessionStarted();
+        $isLoggedIn = isset($_SESSION['user_id']);
+
+        $watchHistoryModel = new watchHistory();
+        $videos = $watchHistoryModel->getUserWatchedVideos((int) ($_SESSION['user_id'] ?? 0));
+
+        // Render the history page with all data
+        $this->render('home/history', [
+            'basePath' => $this->getBasePath(),
+            'videos' => $videos,
+            'isLoggedIn' => $isLoggedIn,
+        ]);
+    }
+
+    // Profile pages for users with their videos and information
+    public function user(){
+        $this->ensureSessionStarted();
+        $isLoggedIn = isset($_SESSION['user_id']);
+        $channelUserId = (int) ($_GET['id'] ?? 0);
+
+        // If the channel id is not valid make the user return to an error page
+        if ($channelUserId <= 0) {
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            exit;
+        }
+
+        $sort = strtolower(trim((string)($_GET['sort'] ?? 'latest')));
+        $allowedSorts = ['latest', 'popular', 'oldest'];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'latest';
+        }
+
+        $userModel = new user();
+        $channelUser = $userModel->getUserById($channelUserId);
+
+        // If the channel id do exist make the user return to an error page
+        if ($channelUser === null) {
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            exit;
+        }
+
+        $videoModel = new Video();
+        $videos = $videoModel->getPublicVideosByUserId($channelUserId, $sort);
+        $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+        $subscriptionModel = new Subscription();
+        $subscriberCount = $subscriptionModel->getSubscriptionCount($channelUserId);
+        $userSubscribe = false;
+
+        // Check whether the logged-in user is subscribed to this channel.
+        if ($isLoggedIn && $currentUserId > 0 && $currentUserId !== $channelUserId) {
+            $userSubscribe = $subscriptionModel->isUserSubscribed($currentUserId, $channelUserId);
+        }
+
+        // Render the profile page with all data
+        $this->render('home/user', [
+            'basePath' => $this->getBasePath(),
+            'isLoggedIn' => $isLoggedIn,
+            'videos' => $videos,
+            'channelUser' => $channelUser,
+            'selectedSort' => $sort,
+            'subscriberCount' => $subscriberCount,
+            'userSubscribe' => $userSubscribe,
+        ]);
+    }
+
+    // Edit, delete and update videos on admin page
     public function manageVideo()
     {
         $this->ensureSessionStarted();
 
+        // RedirectToAdmin function that redirects an user to the admin page with an status
         $redirectToAdmin = function (string $status): void {
             header('Location: ' . $this->getBasePath() . '/index.php?route=admin&upload=' . urlencode($status));
             exit;
         };
 
+        // If the method is not post redirect the admin
         if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             $redirectToAdmin('invalid_request');
         }
 
+        // If the user is not logged in redirect him to login
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . $this->getBasePath() . '/index.php?route=login');
             exit;
         }
 
+        // If an user is not an admin send him to the error page
         if (($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required&code=1001');
             exit;
         }
 
+        // Define raw videoId
         $videoIdRaw = trim((string)($_POST['videoId'] ?? ''));
+
+        // Redirect if the video ID is missing or contains non-numeric characters.
         if ($videoIdRaw === '' || !ctype_digit($videoIdRaw)) {
             $redirectToAdmin('invalid_video');
         }
@@ -343,87 +553,20 @@ class viewController extends Controller
             }
         }
 
+        // If all code ran redirectToAdmin and show updated message
         $redirectToAdmin('updated');
     }
 
-    public function subscriptions(){
-        $this->ensureSessionStarted();
-        $videoModel = new Video();
-        $videos = $videoModel->getAllVideos();
-        // $videos = $videoModel->getAllSubscribedVideos();
-        // $subscriptions = $subscriptionModel->getUserSubscriptions($_SESSION['user_id']);
-        $isLoggedIn = isset($_SESSION['user_id']);
-
-        $this->render('home/subscription', [
-            'basePath' => $this->getBasePath(),
-            'videos' => $videos,
-            'isLoggedIn' => $isLoggedIn,
-        ]);
-    }
-
-    public function library(){
-        $this->ensureSessionStarted();
-        $videoModel = new Video();
-        $videos = $videoModel->getAllVideos();
-        // $likedVideos = $videoModel->getLikedVideosByUser($_SESSION['user_id']);
-        // $watchLaterVideos = $videoModel->getWatchLaterVideosByUser($_SESSION['user_id']);
-        $isLoggedIn = isset($_SESSION['user_id']);
-
-        $this->render('home/library', [
-            'basePath' => $this->getBasePath(),
-            'videos' => $videos,
-            'isLoggedIn' => $isLoggedIn,
-        ]);
-    }
-
-    public function history(){
-        $this->ensureSessionStarted();
-        $videoModel = new Video();
-        $videos = $videoModel->getAllVideos();
-        // $historyVideos = $videoModel->getHistoryVideosByUser($_SESSION['user_id']);
-        $isLoggedIn = isset($_SESSION['user_id']);
-
-        $this->render('home/history', [
-            'basePath' => $this->getBasePath(),
-            'videos' => $videos,
-            'isLoggedIn' => $isLoggedIn,
-        ]);
-    }
-
-    public function user(){
+    // Error page
+    public function error()
+    {
         $this->ensureSessionStarted();
         $isLoggedIn = isset($_SESSION['user_id']);
-        $channelUserId = (int) ($_GET['id'] ?? 0);
 
-        if ($channelUserId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
-            exit;
-        }
-
-        $sort = strtolower(trim((string)($_GET['sort'] ?? 'latest')));
-        $allowedSorts = ['latest', 'popular', 'oldest'];
-
-        if (!in_array($sort, $allowedSorts, true)) {
-            $sort = 'latest';
-        }
-
-        $userModel = new user();
-        $channelUser = $userModel->getUserById($channelUserId);
-
-        if ($channelUser === null) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=home');
-            exit;
-        }
-
-        $videoModel = new Video();
-        $videos = $videoModel->getPublicVideosByUserId($channelUserId, $sort);
-
-        $this->render('home/user', [
+        // Render the error page with all data
+        $this->render('home/error', [
             'basePath' => $this->getBasePath(),
             'isLoggedIn' => $isLoggedIn,
-            'videos' => $videos,
-            'channelUser' => $channelUser,
-            'selectedSort' => $sort,
         ]);
     }
 }

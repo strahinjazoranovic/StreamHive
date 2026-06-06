@@ -419,8 +419,8 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
                 <img id="editThumbnailPreview" class="editThumbnailPreview" src="<?= $basePath ?>/logos/streamHiveLogo.png" alt="Current thumbnail preview">
               </div>
               <div class="modalActions">
-                <button type="button" class="buttonSecondary openDeleteModal">Delete video</button>
-                <button type="submit" class="button">Save changes</button>
+                <button type="button" class="button openDeleteModal">Delete video</button>
+                <button type="submit" class="buttonSecondary">Save changes</button>
               </div>
             </aside>
           </div>

@@ -7,21 +7,33 @@ if (!isset($basePath)) {
   $projectBase = $viewsPosition !== false ? substr($scriptName, 0, $viewsPosition) : '';
   $basePath = $projectBase . '/public';
 }
+// Ensure $videos is defined and is an array to prevent errors in the view
 if (!isset($videos) || !is_array($videos)) {
   $videos = [];
 }
+// Check if user is logged in
+$isLoggedIn = $isLoggedIn ?? false;
+
+// Channel info
 $channelUser = isset($channelUser) && is_array($channelUser) ? $channelUser : [];
 $channelName = trim((string)($channelUser['username'] ?? 'StreamHive Creator'));
 $channelUserId = (int)($channelUser['id'] ?? 0);
-
-
-$videoCount = count($videos);
 $channelInitial = strtoupper(substr($channelName !== '' ? $channelName : '?', 0, 1));
 $handleBase = preg_replace('/[^a-zA-Z0-9._-]/', '', str_replace(' ', '', $channelName));
 $channelHandle = '@' . ($handleBase !== '' ? strtolower($handleBase) : 'streamhive_creator');
 $channelCreatedAt = strtotime((string)($channelUser['created_at'] ?? ''));
 $joinedLabel = $channelCreatedAt ? date('M Y', $channelCreatedAt) : null;
-$isLoggedIn = $isLoggedIn ?? false;
+
+// Subscription status
+$userSubscribe = (bool)($userSubscribe ?? false);
+$subscriberCount = (int)($subscriberCount ?? 0);
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
+$canSubscribe = $channelUserId > 0 && $currentUserId !== $channelUserId;
+
+// Video count
+$videoCount = count($videos);
+
+// Format time with the createdAtValue
 $formatTimeAgo = static function ($createdAtValue) {
   $createdAt = strtotime((string)($createdAtValue ?? ''));
 
@@ -263,7 +275,7 @@ $formatTimeAgo = static function ($createdAtValue) {
               <p class="channelStats">
                 <span class="channelHandle"><?= htmlspecialchars($channelHandle, ENT_QUOTES, 'UTF-8') ?></span>
                 <span class="channelStatsDot">•</span>
-                <span class="watchUploaderSubscribers"><?= (int)($subscriptions['id'] ?? 0) ?> subscribers</span>
+                <span class="watchUploaderSubscribers" data-channel-id="<?= $channelUserId ?>"><?= $subscriberCount ?> subscriber<?= $subscriberCount === 1 ? '' : 's' ?></span>
                 <span class="channelStatsDot">•</span>
                 <span><?= $videoCount ?> Video<?= $videoCount === 1 ? '' : 's' ?></span>
                 <?php if ($joinedLabel !== null): ?>
@@ -272,7 +284,18 @@ $formatTimeAgo = static function ($createdAtValue) {
                 <?php endif; ?>
                 
               </p>
-              <button type="button" class="channelSubscribeButton">Subscribe</button>
+              <?php if ($canSubscribe): ?>
+                <button
+                  type="button"
+                  class="channelSubscribeButton<?= $userSubscribe ? ' isActive' : '' ?>"
+                  data-watch-action="subscribe"
+                  data-channel-id="<?= $channelUserId ?>"
+                  data-subscribed-label="Subscribed"
+                  data-unsubscribed-label="Subscribe"
+                >
+                  <?= $userSubscribe ? 'Subscribed' : 'Subscribe' ?>
+                </button>
+              <?php endif; ?>
             </div>
           </header>
 
