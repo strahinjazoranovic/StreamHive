@@ -23,29 +23,24 @@ class viewController extends Controller
         }
     }
 
-    // Function that decides if the view should increment or not using sessions
+    // Function that decides if the view should increment or not
     private function shouldIncrementVideoViewForSession(int $videoId): bool
     {
-        // Initialize the viewed videos session array if it doesn't exist
         if (!isset($_SESSION['viewed_videos']) || !is_array($_SESSION['viewed_videos'])) {
             $_SESSION['viewed_videos'] = [];
         }
 
-        // Do not increment the view count if this video has already been viewed. This line avoids users giving views to an video while they have already watched it
         if (($_SESSION['viewed_videos'][$videoId] ?? false) === true) {
             return false;
         }
 
-        // Mark the video as viewed and allow the view count to be incremented
         $_SESSION['viewed_videos'][$videoId] = true;
-
         return true;
     }
 
     // Home page with the video feed
     public function index()
     {
-        // Ensure session is always started before entering an page, this line will be found on the top of every page function
         $this->ensureSessionStarted();
         $videoModel = new Video();
         $videos = $videoModel->getAllVideos();
@@ -72,9 +67,8 @@ class viewController extends Controller
             exit;
         }
 
-        // Use the video model to make an new instance and to fetch an video using its id
         $videoModel = new Video();
-        $video = $videoModel->getVideoById($videoId);
+        $video = $videoModel->getVideoByIdForShare($videoId);
 
         // If the video id doesn't exist make the user return to an error page
         if ($video === null) {
@@ -82,26 +76,29 @@ class viewController extends Controller
             exit;
         }
 
-        // Default view to false so it can turn to true after an user has watched it
+        // Default to false
         $viewWasIncremented = false;
 
-        // If the function was true increment the view on the videoId
+        // If the function was true increment the view on the video
         if ($this->shouldIncrementVideoViewForSession($videoId)) {
             $viewWasIncremented = $videoModel->incrementVideoViewsByIdForShare($videoId);
 
-            // If the viewwasincremented and the user is logged in update the views in video by +1 and save the video in watchHistory
-            if ($viewWasIncremented && $isLoggedIn) {
+            // If the view was increment also add the video to the watch history if the user is logged in
+            if ($viewWasIncremented) {
                 $video['views'] = (int) ($video['views'] ?? 0) + 1;
-                $watchHistoryModel = new watchHistory();
-                $watchHistoryModel->addWatchedVideo((int) $_SESSION['user_id'], $videoId);
 
+                // If the user is logged save the watched video
+                if ($isLoggedIn) {
+                    $watchHistoryModel = new watchHistory();
+                    $watchHistoryModel->addWatchedVideo((int) $_SESSION['user_id'], $videoId);
+                }
             } else {
-                // If the code above failed unset the viewed_videos variable from the videoId
+                // If the code above failed remove the view from the video
                 unset($_SESSION['viewed_videos'][$videoId]);
             }
         }
 
-        // Sidebar videos that use an filter to fetch so that you don't get the video fetched that you are watching
+        // Sidebar videos that use an filter to fetch
         $sidebarVideos = array_values(array_filter(
             $videoModel->getAllVideos(),
             static function ($listedVideo) use ($videoId): bool {
@@ -117,11 +114,9 @@ class viewController extends Controller
         $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
         $channelUserId = (int) ($video['user_id'] ?? 0);
 
-        // Bind reaction and subscription status to null and false for the current user
+        // Bind reaction and subscription status for the current user
         $userReactionType = null;
         $userSubscribe = false;
-
-        // Allow subscription only if channel exists and user is not the channel owner
         $canSubscribe = $channelUserId > 0 && $currentUserId !== $channelUserId;
 
         // Watch later for the video
@@ -137,8 +132,9 @@ class viewController extends Controller
             ? $subscriptionModel->getSubscriptionCount($channelUserId)
             : 0;
 
-        // If the user is logged in fetch their likes, dislike and subscription status
+        // If the user is logged im get their likes, dislike and subscription status
         if ($isLoggedIn) {
+            // Likes
             $likeModel = new Like();
             $userReactionType = $likeModel->getUserVideoReaction($videoId, (int) $_SESSION['user_id']);
 
@@ -169,7 +165,6 @@ class viewController extends Controller
         $this->ensureSessionStarted();
         $isLoggedIn = isset($_SESSION['user_id']);
 
-        // If the user is not logged in send him to the login page
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . $this->getBasePath() . '/index.php?route=login');
             exit;
@@ -181,21 +176,16 @@ class viewController extends Controller
             exit;
         }
 
-        // Create a new instance from the videoModel and get videos using the logged in userId to fetch the videos made by the user
         $videoModel = new Video();
         $uploadedVideos = $videoModel->getVideosByUserId((int) $_SESSION['user_id']);
-
-        // Fetch the visibilityOptions for every video
         $visibilityOptions = $videoModel->getVisibilityOptions();
 
-        // Create a new instance from the categoryModel and fetch all categories
         $categoryModel = new category();
         $categories = $categoryModel->getAllCategories();
 
-        // Ftech the upload status
         $uploadStatus = trim((string)($_GET['upload'] ?? ''));
 
-        // All the upload messages for the admin, these messages are used for displaying error and succes messages
+        // All the upload messages for the admin
         $uploadMessages = [
             'success' => 'Video uploaded successfully.',
             'updated' => 'Video updated successfully.',
@@ -229,17 +219,14 @@ class viewController extends Controller
             ? 'success'
             : ($uploadMessage !== '' ? 'error' : '');
 
-        // Create a new instance with commentModel and fetch the comment count so you can display the count for the admin on every video
         $commentModel = new Comment();
-        $comments = $commentModel->fetchCommentCountsByVideoIds($videoIds);
-
-        // Map out the videoId using the uploadedVideos variable
         $videoIds = array_map(
             static function (array $video): int {
                 return (int) ($video['id'] ?? 0);
             },
             $uploadedVideos
-        );   
+        );
+        $comments = $commentModel->fetchCommentCountsByVideoIds($videoIds);
 
         // Render the admin page with all data
         $this->render('home/admin', [
@@ -265,16 +252,10 @@ class viewController extends Controller
             exit;
         }
 
-        // Create a new instance with subscriptionModel and 
         $subscriptionModel = new Subscription();
-
-        // Read the view parameter from the URL query string and default to 'videos' if not provided
         $selectedView = strtolower(trim((string)($_GET['view'] ?? 'videos')));
-
-        // Define allowed views so it is easy to switch between videos and profiles
         $allowedViews = ['videos', 'profiles'];
 
-        // If the value is not allowed, fall back to the default view which is videos
         if (!in_array($selectedView, $allowedViews, true)) {
             $selectedView = 'videos';
         }
@@ -300,7 +281,6 @@ class viewController extends Controller
         $this->ensureSessionStarted();
         $isLoggedIn = isset($_SESSION['user_id']);
 
-        // Create a new instance using the watchLaterModel and fetch all watchLaterVideos with an userId
         $watchLaterModel = new watchLaterVideos();
         $videos = $watchLaterModel->getUserWatchLaterVideos((int) ($_SESSION['user_id'] ?? 0));
 
@@ -317,7 +297,6 @@ class viewController extends Controller
         $this->ensureSessionStarted();
         $isLoggedIn = isset($_SESSION['user_id']);
 
-        // Create a new instance using the watchHistoryModel and fetch all watched videos with userId
         $watchHistoryModel = new watchHistory();
         $videos = $watchHistoryModel->getUserWatchedVideos((int) ($_SESSION['user_id'] ?? 0));
 
@@ -341,7 +320,13 @@ class viewController extends Controller
             exit;
         }
 
-        // Create a new instance using userModel and fetch user by his id
+        $sort = strtolower(trim((string)($_GET['sort'] ?? 'latest')));
+        $allowedSorts = ['latest', 'popular', 'oldest'];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'latest';
+        }
+
         $userModel = new user();
         $channelUser = $userModel->getUserById($channelUserId);
 
@@ -351,18 +336,11 @@ class viewController extends Controller
             exit;
         }
 
-        // Create a new instance using videoModel and fetch public videos using userId to display all videos made by the channel/user
         $videoModel = new Video();
-        $videos = $videoModel->getPublicVideosByUserId($channelUserId);
-
-        // 
+        $videos = $videoModel->getPublicVideosByUserId($channelUserId, $sort);
         $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
-
-        // Create a new instance using subscripitionModel and fetch the subscription count to show it on the channel page
         $subscriptionModel = new Subscription();
         $subscriberCount = $subscriptionModel->getSubscriptionCount($channelUserId);
-
-        // Default userSubscribe to false
         $userSubscribe = false;
 
         // Check whether the logged-in user is subscribed to this channel.
@@ -376,6 +354,7 @@ class viewController extends Controller
             'isLoggedIn' => $isLoggedIn,
             'videos' => $videos,
             'channelUser' => $channelUser,
+            'selectedSort' => $sort,
             'subscriberCount' => $subscriberCount,
             'userSubscribe' => $userSubscribe,
         ]);
@@ -417,37 +396,28 @@ class viewController extends Controller
             $redirectToAdmin('invalid_video');
         }
 
-        // Define videoId using VideoIdRaw
         $videoId = (int) $videoIdRaw;
         $userId = (int) $_SESSION['user_id'];
         $action = trim((string)($_POST['action'] ?? ''));
 
-        // Create a new instance using videoModel and fetch video by videoId and userId to define the exisiting video
         $videoModel = new Video();
         $existingVideo = $videoModel->getVideoByIdAndUserId($videoId, $userId);
 
-        // If the existing video is null redirect to admin with invalid_video error
         if ($existingVideo === null) {
             $redirectToAdmin('invalid_video');
         }
 
-        // Action for deleting videos
         if ($action === 'delete') {
-            // Define parameters for delete action
             $filename = trim((string)($existingVideo['filename'] ?? ''));
             $thumbnail = trim((string)($existingVideo['thumbnail'] ?? ''));
             $deleteOk = $videoModel->deleteVideoByIdAndUserId($videoId, $userId);
 
-            // If delete fails redirect to admin
             if (!$deleteOk) {
                 $redirectToAdmin('delete_failed');
             }
-
-            // Default to false for both
             $videoFileDeleteFailed = false;
             $thumbnailFileDeleteFailed = false;
 
-            // If filename fails
             if ($filename !== '') {
                 $filePath = __DIR__ . '/../../public/uploads/' . $filename;
 
@@ -456,32 +426,25 @@ class viewController extends Controller
                 }
             }
 
-            // If thumbnail fails
             if ($thumbnail !== '') {
-                // Define the path for uploading an thumbnail
                 $thumbnailPath = __DIR__ . '/../../public/uploads/thumbnails/' . $thumbnail;
 
-                // If deletion fails -> mark thumbnailFileDeleteFailed as true
                 if (file_exists($thumbnailPath) && !unlink($thumbnailPath)) {
                     $thumbnailFileDeleteFailed = true;
                 }
             }
 
-            // if videofiledelete redirect the user to admin with delete file failed
             if ($videoFileDeleteFailed) {
                 $redirectToAdmin('delete_file_failed');
             }
 
-            // if thumbnailfiledeletefailed redirect the user to admin with thumbnail file failed
             if ($thumbnailFileDeleteFailed) {
                 $redirectToAdmin('delete_thumbnail_file_failed');
             }
 
-            // If the code above failed redirect to admin with deleted
             $redirectToAdmin('deleted');
         }
 
-        // Ensure the only action that is allowed is update and if the user has an other action redirect him to admin with invalid request
         if ($action !== 'update') {
             $redirectToAdmin('invalid_request');
         }
@@ -491,15 +454,11 @@ class viewController extends Controller
         $videoCategoryRaw = trim((string)($_POST['videoCategory'] ?? ''));
         $videoVisibilityRaw = trim((string)($_POST['videoVisibility'] ?? ''));
 
-        // If videoTitle is empty redirect the user to admin and show missing_title this stops the user from inputting nothing
         if ($videoTitle === '') {
             $redirectToAdmin('missing_title');
         }
 
-        // Bind categoryId to null
         $categoryId = null;
-
-        // If a category is provided, validate that it contains only digits with ctype_digit
         if ($videoCategoryRaw !== '') {
             if (!ctype_digit($videoCategoryRaw)) {
                 $redirectToAdmin('invalid_category');
@@ -508,17 +467,12 @@ class viewController extends Controller
             $categoryId = (int) $videoCategoryRaw;
         }
 
-        // Use videoModel to fetch the visbilityOptions for videos
         $visibilityOptions = $videoModel->getVisibilityOptions();
-
-        // Validate video visibility input
         if ($videoVisibilityRaw === '' || !in_array($videoVisibilityRaw, $visibilityOptions, true)) {
             $redirectToAdmin('invalid_visibility');
         }
 
-        // Bind to null
         $newThumbnailFilename = null;
-
         $thumbnailUploadError = (int) ($_FILES['thumbnailToUpload']['error'] ?? UPLOAD_ERR_NO_FILE);
 
         if ($thumbnailUploadError !== UPLOAD_ERR_NO_FILE) {
@@ -541,7 +495,6 @@ class viewController extends Controller
                 $redirectToAdmin('invalid_thumbnail_type');
             }
 
-            // If the thumbnail size is above 500MB redirect the user to admin and show thumbnail too large this stops the user from uploading too big photos
             $thumbnailSize = (int) ($_FILES['thumbnailToUpload']['size'] ?? 0);
             if ($thumbnailSize > 5000000) {
                 $redirectToAdmin('thumbnail_too_large');

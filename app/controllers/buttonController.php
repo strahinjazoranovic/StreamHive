@@ -66,7 +66,6 @@ class buttonController extends Controller
         ]);
     }
 
-    // Manage the subscriptions
     public function subscription(): void 
     {
         $this->ensureSessionStarted();
@@ -149,6 +148,7 @@ class buttonController extends Controller
             return;
         }
 
+        // Videos
         $videoId = (int) ($_POST['videoId'] ?? 0);
         $reaction = trim((string) ($_POST['reaction'] ?? ''));
 
@@ -161,7 +161,7 @@ class buttonController extends Controller
         }
 
         $videoModel = new Video();
-        $video = $videoModel->getVideoById($videoId);
+        $video = $videoModel->getVideoByIdForShare($videoId);
 
         if ($video === null) {
             $this->json([
@@ -176,7 +176,6 @@ class buttonController extends Controller
         $nextReactionType = $reaction === 'like';
         $currentReaction = $reactionModel->setUserVideoReaction($videoId, $userId, $nextReactionType);
         $counts = $reactionModel->getVideoReactionCounts($videoId);
-
         // Return JSON with likes and dislikes for videos and comments
         $this->json([
             'success' => true,

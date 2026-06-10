@@ -269,8 +269,8 @@ class Video
         return $cleanOptions;
     }
 
-    // Fetch one video for direct-watch pages
-    public function getVideoById(int $videoId): ?array
+    // Fetch one video for direct-watch pages (public + unlisted only)
+    public function getVideoByIdForShare(int $videoId): ?array
     {
         $query = "SELECT v.*, u.username, c.name AS category_name, " . $this->getVideoReactionSelectClause() . " FROM videos v LEFT JOIN users u ON u.id = v.user_id LEFT JOIN category c ON c.id = v.category_id " . $this->getVideoReactionJoinClause() . "WHERE v.id = ? AND (v.visibilty = 'public' OR v.visibilty = 'unlisted' OR v.visibilty IS NULL) LIMIT 1";
         $stmt = mysqli_prepare($this->db, $query);

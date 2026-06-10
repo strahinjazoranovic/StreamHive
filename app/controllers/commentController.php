@@ -11,7 +11,7 @@ class commentController extends Controller
         }
     }
 
-    // When placing an comment use this funciton to redirect the user to the video they are watching
+    // Redirect to the video the user is currently watching
     private function redirectToVideo(int $videoId, string $extraQuery = ''): void
     {
         $videoPath = $this->getBasePath() . '/index.php?route=video&id=' . $videoId;
