@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../app/helpers/videoDuration.php';
+require_once __DIR__ . '/../../app/helpers/videoAccess.php';
+
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -146,10 +148,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
         </li>
 
         <li class="sidebarItem">
-          <a
-            href="<?= $basePath ?>/index.php?route=subscriptions"
-            class="sidebarLink"
-          >
+          <a href="<?= $basePath ?>/index.php?route=subscriptions" class="sidebarLink">
             <img
               src="<?= $basePath ?>/logos/subscriptions.svg"
               class="sidebarIcon"
@@ -234,13 +233,14 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
                 : $basePath . '/logos/streamHiveLogo.png';
               $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
               $commentCount = (int)($comments[$videoId] ?? 0);
+              $videoWatchPath = $videoId > 0 ? buildVideoWatchPath($basePath, $video) : '';
             ?>
             <article class="adminVideoItem">
               <div class="adminVideoMain">
 
                 <div class="adminVideoThumbnail">
                   <?php if ($videoVisibility !== 'private' && $videoId > 0): ?>
-                    <a class="adminVideoThumbnailLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                    <a class="adminVideoThumbnailLink" href="<?= htmlspecialchars($videoWatchPath, ENT_QUOTES, 'UTF-8') ?>">
                       <img class="adminThumbnailImage" src="<?= htmlspecialchars($thumbnailUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($videoTitle !== '' ? $videoTitle : 'Video thumbnail', ENT_QUOTES, 'UTF-8') ?>">
                       <span class="adminDurationBadge"><?= htmlspecialchars($formattedDuration, ENT_QUOTES, 'UTF-8') ?></span>
                       <span class="adminPlayOverlay" aria-hidden="true">▶</span>
@@ -279,7 +279,7 @@ $uploadMessageType = (string)($uploadMessageType ?? '');
                     <?php if ($videoVisibility !== 'private' && $videoId > 0): ?>
                       <a
                         class="adminVideoShareLink"
-                        href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>"
+                        href="<?= htmlspecialchars($videoWatchPath, ENT_QUOTES, 'UTF-8') ?>"
                       >
                         View video
                       </a>

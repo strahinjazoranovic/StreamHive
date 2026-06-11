@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/helpers/videoDuration.php';
+require_once __DIR__ . '/../../app/helpers/videoAccess.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -32,6 +33,9 @@ $sidebarVideos = isset($sidebarVideos) && is_array($sidebarVideos) ? $sidebarVid
 $watchLaterVideos = isset($watchLaterVideos) && is_array($watchLaterVideos) ? $watchLaterVideos : [];
 $isVideoInWatchLater = false;
 $currentVideoId = (int)($video['id'] ?? 0);
+$currentVideoWatchPath = isset($videoWatchPath) && is_string($videoWatchPath) && $videoWatchPath !== ''
+  ? $videoWatchPath
+  : buildVideoWatchPath($basePath, $video);
 
 // Check if the current video is in the user's watch later list
 foreach ($watchLaterVideos as $watchLaterVideo) {
@@ -466,7 +470,7 @@ $formatTimeAgo = static function ($createdAtValue) {
                               >
                               <div class="commentEditActions">
                                 <button type="submit" class="commentActionButton commentActionButtonPrimary">Save</button>
-                                <a class="commentActionButton" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>#comment-<?= $commentId ?>">Cancel</a>
+                                <a class="commentActionButton" href="<?= htmlspecialchars($currentVideoWatchPath, ENT_QUOTES, 'UTF-8') ?>#comment-<?= $commentId ?>">Cancel</a>
                               </div>
                             </form>
                           <!-- But if the comment isn't being edited show this UI -->
@@ -493,7 +497,7 @@ $formatTimeAgo = static function ($createdAtValue) {
 
                       <?php if ($isCommentOwner && !$isEditingThisComment): ?>
                         <div class="commentManageActions">
-                          <a class="commentActionButton" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>&editComment=<?= $commentId ?>#comment-<?= $commentId ?>">Edit</a>
+                          <a class="commentActionButton" href="<?= htmlspecialchars($currentVideoWatchPath, ENT_QUOTES, 'UTF-8') ?>&editComment=<?= $commentId ?>#comment-<?= $commentId ?>">Edit</a>
                           <form class="commentDeleteForm" action="<?= $basePath ?>/index.php?route=manage-comment" method="POST">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="videoId" value="<?= $videoId ?>">
@@ -525,8 +529,11 @@ $formatTimeAgo = static function ($createdAtValue) {
                         ? $basePath . '/uploads/thumbnails/' . rawurlencode($sidebarThumbnailFileName)
                         : $basePath . '/logos/streamHiveLogo.png';
                       $sidebarFormattedDuration = formatVideoDuration($sidebarVideo['duration_seconds'] ?? null);
+                      $sidebarVideoWatchPath = $sidebarVideoId > 0
+                        ? buildVideoWatchPath($basePath, $sidebarVideo)
+                        : $basePath . '/index.php?route=home';
                     ?>
-                    <a class="watchSuggestionCard" href="<?= $basePath ?>/index.php?route=video&id=<?= $sidebarVideoId ?>">
+                    <a class="watchSuggestionCard" href="<?= htmlspecialchars($sidebarVideoWatchPath, ENT_QUOTES, 'UTF-8') ?>">
                       <div class="watchSuggestionThumbnailWrap">
                         <img class="watchSuggestionThumbnail" src="<?= htmlspecialchars($sidebarThumbnailUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($sidebarTitle, ENT_QUOTES, 'UTF-8') ?>">
                         <span class="watchSuggestionDurationBadge"><?= htmlspecialchars($sidebarFormattedDuration, ENT_QUOTES, 'UTF-8') ?></span>

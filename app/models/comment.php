@@ -15,6 +15,7 @@ class Comment
     // Returns SQL SELECT fragment for comment reaction counts
     private function getCommentReactionSelectClause(): string
     {
+        // Return the first null value from an list with COALESCE
         return "COALESCE(comment_reactions.likes_count, 0) AS likes, COALESCE(comment_reactions.dislikes_count, 0) AS dislikes";
     }
 

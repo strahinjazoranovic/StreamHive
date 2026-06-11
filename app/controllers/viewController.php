@@ -11,6 +11,7 @@ require_once __DIR__ . '/../models/user.php';
 require_once __DIR__ . '/../models/subscription.php';
 require_once __DIR__ . '/../models/watchLater.php'; 
 require_once __DIR__ . '/../models/watchHistory.php';
+require_once __DIR__ . '/../helpers/videoAccess.php';
 
 // View controller for rendering pages and handling page related logic which extends the controller class
 class viewController extends Controller
@@ -23,7 +24,7 @@ class viewController extends Controller
         }
     }
 
-    // Function that decides if the view should increment or not
+    // Decide if the view for the video should be increased or not using the viewed_session variable
     private function shouldIncrementVideoViewForSession(int $videoId): bool
     {
         if (!isset($_SESSION['viewed_videos']) || !is_array($_SESSION['viewed_videos'])) {
@@ -41,6 +42,7 @@ class viewController extends Controller
     // Home page with the video feed
     public function index()
     {
+        // This ensures an session is started before rendering an page, this check function gets run on every page function
         $this->ensureSessionStarted();
         $videoModel = new Video();
         $videos = $videoModel->getAllVideos();
@@ -63,7 +65,7 @@ class viewController extends Controller
 
         // If the video id is not valid make the user return to an error page
         if ($videoId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
             exit;
         }
 
@@ -72,8 +74,25 @@ class viewController extends Controller
 
         // If the video id doesn't exist make the user return to an error page
         if ($video === null) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
             exit;
+        }
+
+        $videoVisibility = normalizeVideoVisibilityValue($video['visibilty'] ?? null);
+
+        if ($videoVisibility === 'unlisted') {
+            $currentSessionUserId = (int) ($_SESSION['user_id'] ?? 0);
+            $providedToken = (string) ($_GET['token'] ?? '');
+            $isOwnerAdmin = $isLoggedIn
+                && $currentSessionUserId > 0
+                && $currentSessionUserId === (int) ($video['user_id'] ?? 0)
+                && (($_SESSION['role'] ?? '') === 'admin');
+            $hasValidToken = isValidUnlistedVideoAccessToken($video, $providedToken);
+
+            if (!$isOwnerAdmin && !$hasValidToken) {
+                header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
+                exit;
+            }
         }
 
         // Default to false
@@ -144,11 +163,14 @@ class viewController extends Controller
             }
         }
 
+        $videoWatchPath = buildVideoWatchPath($this->getBasePath(), $video);
+
         // Render the video page with all data
         $this->render('home/video', [
             'basePath' => $this->getBasePath(),
             'comments' => $comments,
             'video' => $video,
+            'videoWatchPath' => $videoWatchPath,
             'sidebarVideos' => $sidebarVideos,
             'isLoggedIn' => $isLoggedIn,
             'userReactionType' => $userReactionType,
@@ -172,7 +194,7 @@ class viewController extends Controller
 
         // If an user is not an admin send him to the error page
         if (($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required&code=1001  ');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required');
             exit;
         }
 
@@ -316,7 +338,7 @@ class viewController extends Controller
 
         // If the channel id is not valid make the user return to an error page
         if ($channelUserId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
             exit;
         }
 
@@ -332,7 +354,7 @@ class viewController extends Controller
 
         // If the channel id do exist make the user return to an error page
         if ($channelUser === null) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
             exit;
         }
 
@@ -384,7 +406,7 @@ class viewController extends Controller
 
         // If an user is not an admin send him to the error page
         if (($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required&code=1001');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=admin_required');
             exit;
         }
 

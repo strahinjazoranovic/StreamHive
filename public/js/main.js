@@ -1,6 +1,24 @@
 // Sidebar handling which uses localstorage to save the state of the sidebar
 const hamburgerButton = document.querySelector(".sidebar-toggle");
 const sidebar = document.querySelector(".sidebar");
+const navbar = document.querySelector(".navbar");
+
+const syncNavbarHeightVariable = () => {
+  if (!navbar) {
+    return;
+  }
+
+  const navbarHeight = Math.ceil(navbar.getBoundingClientRect().height);
+  document.documentElement.style.setProperty(
+    "--navbar-height",
+    `${navbarHeight}px`,
+  );
+};
+
+if (navbar) {
+  syncNavbarHeightVariable();
+  window.addEventListener("resize", syncNavbarHeightVariable);
+}
 
 // Profile and edit menu's
 const profileMenuTrigger = document.querySelector(".profileMenu-trigger");
@@ -11,8 +29,8 @@ if (hamburgerButton && sidebar) {
   const params = new URLSearchParams(window.location.search);
   const isVideoPage = params.get("route") === "video";
   const sidebarState = localStorage.getItem("sidebar");
-  // Watch page starts closed, while keeping the user's saved preference untouched.
-  // Other pages restore the user's latest toggle choice.
+
+  // Watch page starts closed, while keeping the user's saved preference for other pages.
   if (!isVideoPage && sidebarState === "open") {
     sidebar.classList.add("open");
   } else {
@@ -26,6 +44,18 @@ if (hamburgerButton && sidebar) {
       "sidebar",
       sidebar.classList.contains("open") ? "open" : "closed",
     );
+  });
+
+  sidebar.addEventListener("click", (event) => {
+    const clickedSidebarLink = event.target.closest("a[href]");
+    const isMobileSidebar = window.matchMedia("(max-width: 1200px)").matches;
+
+    if (!clickedSidebarLink || !isMobileSidebar) {
+      return;
+    }
+
+    sidebar.classList.remove("open");
+    localStorage.setItem("sidebar", "closed");
   });
 
   requestAnimationFrame(() => {
@@ -548,8 +578,9 @@ if (watchVideoPlayer) {
       }
 
       setVolumeBarProgress(
-        Number(watchVolumeBar ? watchVolumeBar.value : watchVideoPlayer.volume) *
-          100,
+        Number(
+          watchVolumeBar ? watchVolumeBar.value : watchVideoPlayer.volume,
+        ) * 100,
       );
     });
   }
@@ -778,7 +809,9 @@ if (watchVideoPlayer) {
   syncSidebarHeight();
   updateMuteIcon();
   setSeekBarProgress(Number(watchSeekBar ? watchSeekBar.value : "0"));
-  setVolumeBarProgress(Number(watchVolumeBar ? watchVolumeBar.value : "0") * 100);
+  setVolumeBarProgress(
+    Number(watchVolumeBar ? watchVolumeBar.value : "0") * 100,
+  );
   updatePlayIcons();
 }
 

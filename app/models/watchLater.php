@@ -99,6 +99,7 @@ class watchLaterVideos
         return true;
     }
 
+    // Checks if the video is already saved for the user using userId and videoId
     private function isVideoSavedForUser(int $userId, int $videoId): ?bool
     {
         $checkQuery = "SELECT 1 FROM watch_later WHERE user_id = ? AND video_id = ? LIMIT 1";

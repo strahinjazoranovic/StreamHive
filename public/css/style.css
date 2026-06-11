@@ -7,6 +7,18 @@ main {
   padding: 0;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 h1,
 h2,
 h3,
@@ -23,16 +35,20 @@ a {
   text-decoration: none;
   color: inherit;
 }
+:root {
+  --navbar-height: 88px;
+  --sidebar-width: 220px;
+}
 
 .channelAvatar {
-  width: 150px;
-  height: 150px;
-  min-width: 150px;
+  width: clamp(96px, 14vw, 150px);
+  height: clamp(96px, 14vw, 150px);
+  min-width: clamp(96px, 14vw, 150px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3.2rem;
+  font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 700;
   color: #ffffff;
   background: linear-gradient(145deg, #ff0000, #cc0000);
@@ -65,7 +81,9 @@ a {
   display: flex;
   align-items: center;
   padding: 1rem 2rem;
-  height: 60px;
+  min-height: 60px;
+  height: auto;
+  gap: 1rem;
   background-color: #222222;
   border-bottom: 2px solid #666666;
 }
@@ -76,13 +94,16 @@ a {
   justify-content: flex-start;
   gap: 1rem;
   align-items: center;
+  min-width: 0;
 }
 
-.navbarCenter {
+.navbarCenter,
+.navbar-center {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-width: 0;
 }
 
 .navbarRight {
@@ -91,6 +112,7 @@ a {
   justify-content: flex-end;
   gap: 1.6rem;
   align-items: center;
+  min-width: 0;
 }
 
 .searchBar {
@@ -103,8 +125,10 @@ a {
   padding: 0.5rem 1rem;
   color: #f5f5f5;
   border-radius: 8px;
-  width: 400px;
-  height: 30px;
+  width: min(100%, 400px);
+  max-width: 100%;
+  min-height: 30px;
+  height: auto;
 }
 
 .searchInput {
@@ -207,7 +231,7 @@ a {
 }
 
 .textHeader {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 2vw, 2rem);
   font-weight: bold;
 }
 
@@ -215,19 +239,25 @@ a {
   color: #ff0000;
 }
 
+.navbarLogoLink {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .sidebar {
   position: fixed;
-  top: 94px;
+  top: var(--navbar-height);
   left: 0;
-  width: 220px;
-  height: calc(100vh - 120px);
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--navbar-height));
   padding: 16px 14px;
   overflow-y: auto;
   background: #222222;
   border-right: 1px solid #666666;
   z-index: 10;
   opacity: 0;
-  transform: translateX(-250px);
+  transform: translateX(calc(-1 * (var(--sidebar-width) + 24px)));
   pointer-events: none;
   transition:
     opacity 0.4s ease,
@@ -254,21 +284,17 @@ body:not(.sidebar-ready) .videoGridAdmin {
 }
 
 .sidebarItem {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
+  display: block;
+  padding: 0;
   border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.3s ease;
 }
 
 .sidebarItem:hover {
-  background-color: #666666;
+  background-color: transparent;
 }
 
 .sidebarItem:active {
-  transform: translateY(1px);
+  transform: none;
 }
 
 .sidebarIcon {
@@ -291,6 +317,22 @@ body:not(.sidebar-ready) .videoGridAdmin {
   width: 100%;
 }
 
+.sidebarMenu .sidebarLink {
+  padding: 10px 20px;
+  border-radius: 12px;
+  transition:
+    background 0.3s ease,
+    transform 0.2s ease;
+}
+
+.sidebarItem:hover .sidebarLink {
+  background-color: #666666;
+}
+
+.sidebarItem:active .sidebarLink {
+  transform: translateY(1px);
+}
+
 .sidebarDivider {
   height: 2px;
   background-color: #2a2a2a;
@@ -298,6 +340,10 @@ body:not(.sidebar-ready) .videoGridAdmin {
 }
 
 .sidebarItem.active {
+  background-color: transparent;
+}
+
+.sidebarItem.active .sidebarLink {
   background-color: #2a2a2a;
 }
 
@@ -311,13 +357,14 @@ body:not(.sidebar-ready) .videoGridAdmin {
 }
 
 .container {
-  padding: 24px;
+  padding: clamp(14px, 3vw, 24px);
   margin-left: 0;
+  min-height: calc(100vh - 120px);
   transition: margin-left 0.4s ease;
 }
 
 .sidebar.open ~ .container {
-  margin-left: 250px;
+  margin-left: var(--sidebar-width);
 }
 
 .errorContainer {
@@ -327,8 +374,9 @@ body:not(.sidebar-ready) .videoGridAdmin {
   justify-content: center;
   text-align: center;
   gap: 12px;
-  padding: 24px;
+  padding: clamp(14px, 3vw, 24px);
   margin-left: 0;
+  min-height: calc(100vh - 120px);
   transition: margin-left 0.4s ease;
 }
 
@@ -338,7 +386,7 @@ body:not(.sidebar-ready) .videoGridAdmin {
 }
 
 .sidebar.open ~ .errorContainer {
-  margin-left: 250px;
+  margin-left: var(--sidebar-width);
 }
 
 .containerGuest {
@@ -353,13 +401,22 @@ body:not(.sidebar-ready) .videoGridAdmin {
   border-radius: 10px;
   padding: 24px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   width: 100%;
   max-width: 520px;
 }
 
 .loginPrompt button {
-  width: 35%;
-  margin-right: 12px;
+  width: 100%;
+  margin-right: 0;
+}
+.loginPromptSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .loginPromptSidebar button {
@@ -367,5 +424,71 @@ body:not(.sidebar-ready) .videoGridAdmin {
 }
 
 .loginMessage {
-  margin-bottom: 12px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 1200px) {
+  .sidebar {
+    top: 0;
+    width: min(82vw, 280px);
+    height: 100vh;
+    padding-top: 98px;
+    transform: translateX(-110%);
+    background: rgba(34, 34, 34, 0.98);
+  }
+
+  .sidebar.open ~ .container,
+  .sidebar.open ~ .errorContainer,
+  .sidebar.open ~ .videoGridAdmin {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .navbarLeft,
+  .navbarRight {
+    flex: 1 1 auto;
+  }
+
+  .navbarCenter,
+  .navbar-center {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .searchBar {
+    width: 100%;
+  }
+
+  .sidebar {
+    padding-top: 118px;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbarRight {
+    gap: 1rem;
+  }
+
+  .sidebar {
+    padding-top: 126px;
+  }
+
+  .channelAvatarVideo {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .channelAvatarTextSmall {
+    font-size: 16px;
+  }
 }

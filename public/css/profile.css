@@ -9,6 +9,7 @@
 
 .channelHeader {
   display: flex;
+  flex-wrap: wrap;
   gap: 22px;
   padding: 0px 0px 10px 0px;
   align-items: center;
@@ -146,7 +147,7 @@
 }
 
 .profileVideoTitle {
-  font-size: 1.35rem;
+  font-size: clamp(1.05rem, 2.3vw, 1.35rem);
   line-height: 1.3;
   font-weight: 600;
   margin: 0;
@@ -155,6 +156,7 @@
 
 .profileVideoMetaRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
@@ -182,6 +184,10 @@
     align-items: flex-start;
   }
 
+  .channelMeta {
+    width: 100%;
+  }
+
   .channelAvatar {
     width: 112px;
     height: 112px;
@@ -196,5 +202,27 @@
   .channelSortRow {
     overflow-x: auto;
     padding-bottom: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .channelTitle {
+    font-size: clamp(1.5rem, 7vw, 2.2rem);
+  }
+
+  .channelStats {
+    font-size: 0.92rem;
+  }
+
+  .channelAvatar {
+    width: 88px;
+    height: 88px;
+    min-width: 88px;
+    font-size: 2rem;
+  }
+
+  .channelSubscribeButton {
+    width: 100%;
+    text-align: center;
   }
 }

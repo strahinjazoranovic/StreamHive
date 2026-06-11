@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/controller.php';
 require_once __DIR__ . '/../models/comment.php';
+require_once __DIR__ . '/../models/video.php';
+require_once __DIR__ . '/../helpers/videoAccess.php';
 
 class commentController extends Controller
 {
@@ -15,6 +17,12 @@ class commentController extends Controller
     private function redirectToVideo(int $videoId, string $extraQuery = ''): void
     {
         $videoPath = $this->getBasePath() . '/index.php?route=video&id=' . $videoId;
+        $videoModel = new Video();
+        $video = $videoModel->getVideoByIdForShare($videoId);
+
+        if (is_array($video)) {
+            $videoPath = buildVideoWatchPath($this->getBasePath(), $video);
+        }
         header('Location: ' . $videoPath . $extraQuery);
         exit;
     }
@@ -26,7 +34,7 @@ class commentController extends Controller
 
         // Only allow POST requests to manage comments
         if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=incorrect_method&code=405');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=incorrect_method');
             exit;
         }
 
@@ -40,7 +48,7 @@ class commentController extends Controller
 
         // If the video id is not valid make the user return to an error page
         if ($videoId <= 0) {
-            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found&code=404');
+            header('Location: ' . $this->getBasePath() . '/index.php?route=error&type=not_found');
             exit;
         }
 

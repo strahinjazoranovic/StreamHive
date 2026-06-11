@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
-  padding: 20px;
+  padding: clamp(14px, 3vw, 20px);
   transition: margin-left 0.4s ease;
 }
 
@@ -21,7 +21,7 @@
 }
 
 .videoCardHeader h2 {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
   font-weight: 700;
 }
 
@@ -154,6 +154,7 @@
 
 .adminVideoActions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -187,6 +188,7 @@
 .adminVideoColumn {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 4px;
 }
 
@@ -215,9 +217,10 @@ select:focus {
   transform: translate(-50%, -50%);
   z-index: 1001;
   flex-direction: column;
-  width: 100%;
+  width: min(96vw, 800px);
   max-width: 800px;
-  padding: 24px;
+  padding: clamp(14px, 3vw, 24px);
+  box-sizing: border-box;
   border-radius: 12px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -524,6 +527,8 @@ form {
   .adminVideoColumn {
     flex-direction: row;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     border-top: 1px solid #333333;
     padding-top: 12px;
   }
@@ -533,6 +538,7 @@ form {
   }
 }
 
+
 @media (max-width: 980px) {
   .videoCardEditAdmin {
     width: 95%;
@@ -541,9 +547,17 @@ form {
   .editModalLayout {
     grid-template-columns: 1fr;
   }
+
+  .modalActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 700px) {
+  .videoGridAdmin {
+    padding: 14px;
+  }
   .videoCardAddAdmin,
   .videoCardEditAdmin,
   .videoDeleteConfirm {
@@ -557,10 +571,27 @@ form {
   }
 
   .adminVideoThumbnail {
-    height: 200px;
+    height: auto;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .adminVideoColumn {
+    flex-wrap: wrap;
+  }
+
+  .modalHeader {
+    align-items: flex-start;
+    gap: 10px;
   }
 }
 
 .sidebar.open ~ .videoGridAdmin {
-  margin-left: 250px;
+  margin-left: var(--sidebar-width);
+}
+
+@media (max-width: 1200px) {
+  .sidebar.open ~ .videoGridAdmin {
+    margin-left: 0;
+  }
 }

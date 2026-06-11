@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/helpers/videoDuration.php';
+require_once __DIR__ . '/../../app/helpers/videoAccess.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -310,14 +311,14 @@ $formatTimeAgo = static function ($createdAtValue) {
               <?php foreach ($videos as $video): ?>
                 <?php
                   $videoId = (int)($video['id'] ?? 0);
+                  $videoWatchPath = $videoId > 0 ? buildVideoWatchPath($basePath, $video) : $basePath . '/index.php?route=home';
                   $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
                   $thumbnailUrl = $thumbnailFileName !== ''
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
-                  $videoCategoryName = trim((string)($video['category_name'] ?? ''));
                 ?>
-                <a class="profileVideoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                <a class="profileVideoCardLink" href="<?= htmlspecialchars($videoWatchPath, ENT_QUOTES, 'UTF-8') ?>">
                   <article class="profileVideoCard">
                     <div class="profileVideoThumbnailWrap">
                       <img
@@ -334,10 +335,6 @@ $formatTimeAgo = static function ($createdAtValue) {
                       <p class="profileVideoMeta"><?= (int)($video['views'] ?? 0) ?> views</p>
                       <span class="profileVideoMetaDot">•</span>
                       <p class="profileVideoMeta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                      <?php if ($videoCategoryName !== ''): ?>
-                        <span class="profileVideoMetaDot">•</span>
-                        <p class="profileVideoMeta">#<?= htmlspecialchars($videoCategoryName, ENT_QUOTES, 'UTF-8') ?></p>
-                      <?php endif; ?>
                     </div>
                   </article>
                 </a>

@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../app/models/video.php';
 require_once __DIR__ . '/../app/models/comment.php';
+require_once __DIR__ . '/../app/helpers/videoAccess.php';
 
 // If there is no session found start an session
 if (session_status() === PHP_SESSION_NONE) {
@@ -35,7 +36,13 @@ if (
 
     // If comment is empty return to the video where the uesr is located without inserting
     if ($commentText === '') {
-        header('Location: ' . $basePath . '/index.php?route=video&id=' . $videoId);
+        $videoModel = new Video();
+        $video = $videoModel->getVideoByIdForShare($videoId);
+        $videoPath = is_array($video)
+            ? buildVideoWatchPath($basePath, $video)
+            : $basePath . '/index.php?route=video&id=' . $videoId;
+
+        header('Location: ' . $videoPath);
         exit;
     }
 
@@ -70,10 +77,8 @@ $iniSizeToBytes = static function (string $value): int {
     switch ($unit) {
         case 'g':
             $number *= 1024;
-            // no break
         case 'm':
             $number *= 1024;
-            // no break
         case 'k':
             $number *= 1024;
             break;

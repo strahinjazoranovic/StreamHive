@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/helpers/videoDuration.php';
+require_once __DIR__ . '/../../app/helpers/videoAccess.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -271,16 +272,16 @@ $formatTimeAgo = static function ($createdAtValue) {
                 <?php
                   $videoId = (int)($video['id'] ?? 0);
                   $uploaderId = (int)($video['user_id'] ?? 0);
+            $videoWatchPath = $videoId > 0 ? buildVideoWatchPath($basePath, $video) : '';
                   $thumbnailFileName = trim((string)($video['thumbnail'] ?? ''));
                   $thumbnailUrl = $thumbnailFileName !== ''
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
-                  $videoCategoryName = trim((string)($video['category_name'] ?? ''));
                 ?>
                 <article class="videoCard">
                   <?php if ($videoId > 0): ?>
-                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+              <a class="videoCardLink" href="<?= htmlspecialchars($videoWatchPath, ENT_QUOTES, 'UTF-8') ?>">
                   <?php endif; ?>
                       <div class="videoThumbnailLink">
                         <img
@@ -311,9 +312,6 @@ $formatTimeAgo = static function ($createdAtValue) {
                   <div class="videoDiv">
                     <p class="video-meta"><?= (int)($video['views'] ?? 0) ?> views</p>
                     <p class="video-meta"><?= htmlspecialchars($formatTimeAgo($video['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                    <?php if ($videoCategoryName !== ''): ?>
-                      <p class="video-meta">#<?= htmlspecialchars($videoCategoryName, ENT_QUOTES, 'UTF-8') ?></p>
-                    <?php endif; ?>
                   </div>
                 </article>
 

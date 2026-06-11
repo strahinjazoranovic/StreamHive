@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../app/helpers/videoDuration.php';
+require_once __DIR__ . '/../../app/helpers/videoAccess.php';
 // Fallback mechanism to determine base path for assets and links
 if (!isset($basePath)) {
   $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -274,11 +275,11 @@ $formatTimeAgo = static function ($createdAtValue) {
                     ? $basePath . '/uploads/thumbnails/' . rawurlencode($thumbnailFileName)
                     : $basePath . '/logos/streamHiveLogo.png';
                   $formattedDuration = formatVideoDuration($video['duration_seconds'] ?? null);
-                  $videoCategoryName = trim((string)($video['category_name'] ?? ''));
+                  $videoWatchPath = $videoId > 0 ? buildVideoWatchPath($basePath, $video) : '';
                 ?>
                 <article class="videoCard">
                   <?php if ($videoId > 0): ?>
-                    <a class="videoCardLink" href="<?= $basePath ?>/index.php?route=video&id=<?= $videoId ?>">
+                    <a class="videoCardLink" href="<?= htmlspecialchars($videoWatchPath, ENT_QUOTES, 'UTF-8') ?>">
                   <?php endif; ?>
                       <div class="videoThumbnailLink">
                         <img
